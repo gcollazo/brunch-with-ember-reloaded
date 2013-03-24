@@ -1,6 +1,5 @@
 ## A new and up-to-date Ember.js Brunch Skeleton
 
-
 - Ember v1.0.0-rc.1
 - Handlebars 1.0.0-rc.3
 - jQuery v1.9.1
