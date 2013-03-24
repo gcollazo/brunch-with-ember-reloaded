@@ -1,4 +1,5 @@
 ## A new and up-to-date Ember.js Brunch Skeleton
+This skeleton is based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
 
 - Ember v1.0.0-rc.1
 - Handlebars 1.0.0-rc.3
