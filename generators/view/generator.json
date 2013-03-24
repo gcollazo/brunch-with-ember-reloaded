@@ -2,7 +2,7 @@
   "files": [
     {
       "from": "view.coffee.hbs",
-      "to": "app/views/{{name}}.coffee"
+      "to": "app/views/{{#camelize}}{{name}}{{/camelize}}View.coffee"
     }
   ],
   "dependencies": []

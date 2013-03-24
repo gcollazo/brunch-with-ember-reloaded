@@ -2,7 +2,7 @@
   "files": [
     {
       "from": "controller.coffee.hbs",
-      "to": "app/controllers/{{name}}.coffee"
+      "to": "app/controllers/{{#camelize}}{{name}}{{/camelize}}Controller.coffee"
     }
   ],
   "dependencies": []

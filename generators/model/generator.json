@@ -2,7 +2,7 @@
   "files": [
     {
       "from": "model.coffee.hbs",
-      "to": "app/models/{{name}}.coffee"
+      "to": "app/models/{{#camelize}}{{name}}{{/camelize}}.coffee"
     }
   ],
   "dependencies": []

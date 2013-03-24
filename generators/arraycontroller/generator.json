@@ -1,0 +1,9 @@
+{
+  "files": [
+    {
+      "from": "arraycontroller.coffee.hbs",
+      "to": "app/controllers/{{#camelize}}{{pluralName}}{{/camelize}}Controller.coffee"
+    }
+  ],
+  "dependencies": []
+}
