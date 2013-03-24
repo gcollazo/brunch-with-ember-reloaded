@@ -22,13 +22,25 @@ brunch watch -s
 ```
 Then open [http://localhost:3333](http://localhost:3333) on your browser.
 
-### Get ember-data
+### ember-data.js
 There's a little cake task to download the latest ember-data.js and copy it to your `vendor/scripts` directory. To build ember-data.js the script will run `bundle` and `rake` on the cloned repository, so you need to have that installed on your system.
 
 ```
 cake getemberdata
 ```
 When the script finishes just add `'vendor/scripts/ember-data.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
+
+### Generators
+This skeleton makes use of Brunch generators to help you create common files quicker.
+
+```
+brunch g model <name> 				→ app/models/			Name.coffee
+brunch g view <name>				→ app/views/			NameView.coffee
+brunch g controller <name> 			→ app/controllers/	NameController.coffee
+brunch g arraycontroller <name>		→ app/controllers/	NamesController.coffee
+brunch g route <name> 				→ app/routes/			NameRoute.coffee
+brunch g template <name> 			→ app/templates		name.hbs
+```
 
 ## License
 All of brunch-with-ember-reloaded is licensed under the MIT license.
