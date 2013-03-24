@@ -43,6 +43,16 @@ brunch g route <name> 				→ app/routes/			NameRoute.coffee
 brunch g template <name> 			→ app/templates		name.hbs
 ```
 
+### Testing
+You can write your tests in the `test` folder. The skeleton puts a sample test case on `test/sample-tests/array-test.coffee`. To run see your tests just:
+
+```
+brunch watch -s
+```
+
+Open [http://localhost:3333/test/](http://localhost:3333/test/) on your browser.
+
+
 ## License
 All of brunch-with-ember-reloaded is licensed under the MIT license.
 
