@@ -1,0 +1,9 @@
+{
+  "files": [
+    {
+      "from": "route.coffee.hbs",
+      "to": "app/routes/{{name}}.coffee"
+    }
+  ],
+  "dependencies": []
+}
