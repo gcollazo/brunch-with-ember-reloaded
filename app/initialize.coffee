@@ -1,5 +1,5 @@
 # ===== Namespace =====
-window.App = require 'app'
+App = require 'app'
 
 
 # ===== Templates =====
