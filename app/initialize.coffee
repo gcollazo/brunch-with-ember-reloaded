@@ -20,9 +20,9 @@ require 'templates/index'
 
 
 # ===== Routes =====
-
-
-# ===== Router =====
 App.IndexRoute = Ember.Route.extend
     setupController: (controller) ->
         controller.set 'content', ['red', 'yellow', 'blue']
+
+
+# ===== Router =====
