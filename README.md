@@ -28,6 +28,7 @@ There's a little cake task to download the latest ember-data.js and copy it to y
 ```
 cake getemberdata
 ```
+When the script finishes just add `'vendor/scripts/ember-data.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
 
 ## License
 All of brunch-with-ember-reloaded is licensed under the MIT license.
