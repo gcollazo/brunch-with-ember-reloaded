@@ -22,6 +22,13 @@ brunch watch -s
 ```
 Then open [http://localhost:3333](http://localhost:3333) on your browser.
 
+### Get ember-data
+There's a little cake task to download the latest ember-data.js and copy it to your `vendor/scripts` directory. To build ember-data.js the script will run `bundle` and `rake` on the cloned repository, so you need to have that installed on your system.
+
+```
+cake getemberdata
+```
+
 ## License
 All of brunch-with-ember-reloaded is licensed under the MIT license.
 
