@@ -31,7 +31,7 @@ cake getemberdata
 When the script finishes just add `'vendor/scripts/ember-data.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
 
 ### Generators
-This skeleton makes use of Brunch generators to help you create common files quicker.
+This skeleton makes use of Brunch [generators](https://github.com/brunch/brunch/blob/master/docs/commands.md#brunch-generate) to help you create common files quicker.
 
 ```
 brunch g model <name> 				→ app/models/			Name.coffee
