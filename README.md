@@ -18,9 +18,10 @@ A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](
 
 ```
 brunch new <appname> --skeleton git@github.com:gcollazo/brunch-with-ember-reloaded.git
+cd <appname>
 brunch watch -s
 ```
-Then open [http://localhost:3333](http://localhost:3333) on your browser.
+Open [http://localhost:3333](http://localhost:3333) on your browser.
 
 ### ember-data.js
 There's a little cake task to download the latest ember-data.js and copy it to your `vendor/scripts` directory. To build ember-data.js the script will run `bundle` and `rake` on the cloned repository, so you need to have that installed on your system.
