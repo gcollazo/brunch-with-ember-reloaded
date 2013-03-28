@@ -42,7 +42,7 @@ bundleAndRake = (callback) ->
 
 moveToVendor = (callback) ->
     statusMessage 'Move ember-data.js to vendor folder'
-    exec 'mv ember-data.js ../../../vendor/scripts/', {cwd: "#{tmpFolderName}/data/dist"}, (error, stdout, stderr) ->
+    exec 'mv ember-data.js ../../../vendor/scripts/ember-data-master.js', {cwd: "#{tmpFolderName}/data/dist"}, (error, stdout, stderr) ->
         consolePrint(error, stdout, stderr)
         callback?()
 
@@ -53,7 +53,7 @@ cleanTmp = (callback) ->
         if callback
             callback()
         else
-            statusMessage 'Done: you can find ember-data.js on vendor/scripts/ember-data.js'
+            statusMessage 'Done: you can find Ember Data on vendor/scripts/ember-data-master.js'
 
 statusMessage = (message) ->
     if message
