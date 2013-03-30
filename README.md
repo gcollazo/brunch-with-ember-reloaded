@@ -128,7 +128,7 @@ Open [http://localhost:3333/test/](http://localhost:3333/test/) on your browser.
 └── vendor
     ├── scripts
     │   ├── console-polyfill.js
-    │   ├── ember-1.0.0-rc.1.js
+    │   ├── ember-1.0.0-rc.2.js
     │   ├── handlebars-1.0.rc.3.js
     │   ├── jquery-1.9.1.js
     │   └── swag.js
