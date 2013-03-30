@@ -2,7 +2,7 @@
     "author": "Giovanni Collazo",
     "name": "brunch-with-ember-reloaded",
     "description": "A new and up-to-date Brunch skeleton for developing Ember applications",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "homepage": "",
     "repository": {
         "type": "git",
