@@ -32,16 +32,17 @@ cake getemberdata
 When the script finishes just add `'vendor/scripts/ember-data.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
 
 ### Generators
-This skeleton makes use of Brunch [generators](https://github.com/brunch/brunch/blob/master/docs/commands.md#brunch-generate) to help you create common files quicker.
+This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install skaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
 
 ```
-brunch g model <name> 				→ app/models/			Name.coffee
-brunch g view <name>				→ app/views/			NameView.coffee
-brunch g controller <name> 			→ app/controllers/	NameController.coffee
-brunch g arraycontroller <name>		→ app/controllers/	NamesController.coffee
-brunch g route <name> 				→ app/routes/			NameRoute.coffee
-brunch g template <name> 			→ app/templates		name.hbs
+skaffolt model <name> 				→ app/models/			Name.coffee
+skaffolt view <name>				→ app/views/			NameView.coffee
+skaffolt controller <name> 			→ app/controllers/	NameController.coffee
+skaffolt arraycontroller <name>		→ app/controllers/	NamesController.coffee
+skaffolt route <name> 				→ app/routes/			NameRoute.coffee
+skaffolt template <name> 			→ app/templates		name.hbs
 ```
+There's a few more commands you can use with scaffolt and also instruction on how to create your own generators, so make sure you check out the [docs](https://github.com/paulmillr/scaffolt#readme).
 
 ### Testing
 You can write your tests in the `test` folder. The skeleton puts a sample test case on `test/sample-tests/array-test.coffee`. To run see your tests just:
