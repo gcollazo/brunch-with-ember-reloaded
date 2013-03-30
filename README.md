@@ -6,7 +6,6 @@ A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](
 - [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
 - [jQuery v1.9.1](http://jquery.com)
 - [HTML5 Boilerplate v4.1.0](http://html5boilerplate.com)
-- [Swag v0.2.6](https://github.com/elving/swag)
 
 ## Features
 - **CoffeeScript** - a little language that compiles into JavaScript.
@@ -132,7 +131,6 @@ Open [http://localhost:3333/test/](http://localhost:3333/test/) on your browser.
     │   ├── ember-1.0.0-rc.2.js
     │   ├── handlebars-1.0.rc.3.js
     │   ├── jquery-1.9.1.js
-    │   └── swag.js
     └── styles
         └── normalize.css
 ```
