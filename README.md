@@ -1,6 +1,13 @@
 # brunch-with-ember-reloaded
 A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](http://emberjs.com) applications based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
 
+## Demo
+I built a demo app using this skeleton, based on the [Building an App with Ember.js](http://www.youtube.com/watch?v=Ga99hMi7wfY) video by [Tom Dale](http://twitter.com/tomdale).
+
+**Demo**: [ember-bloggr](http://dev.gcollazo.com/ember-bloggr)
+
+**Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
+
 ## Versions
 - [Ember v1.0.0-rc.2](http://emberjs.com)
 - [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
