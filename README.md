@@ -2,7 +2,7 @@
 A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](http://emberjs.com) applications based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
 
 ## Versions
-- [Ember v1.0.0-rc.1](http://emberjs.com)
+- [Ember v1.0.0-rc.2](http://emberjs.com)
 - [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
 - [jQuery v1.9.1](http://jquery.com)
 - [HTML5 Boilerplate v4.1.0](http://html5boilerplate.com)
