@@ -4,8 +4,7 @@ A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](
 ## Demo
 I built a demo app using this skeleton, based on the [Building an App with Ember.js](http://www.youtube.com/watch?v=Ga99hMi7wfY) video by [Tom Dale](http://twitter.com/tomdale).
 
-**Demo**: [ember-bloggr](http://dev.gcollazo.com/ember-bloggr)
-
+**Demo**: [ember-bloggr](http://dev.gcollazo.com/ember-bloggr)  
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
@@ -59,88 +58,6 @@ brunch watch -s
 
 Open [http://localhost:3333/test/](http://localhost:3333/test/) on your browser.
 
-## File structure
-```
-├── Cakefile
-├── LICENSE
-├── README.md
-├── app
-│   ├── app.coffee
-│   ├── assets
-│   │   ├── 404.html
-│   │   ├── apple-touch-icon-114x114-precomposed.png
-│   │   ├── apple-touch-icon-144x144-precomposed.png
-│   │   ├── apple-touch-icon-57x57-precomposed.png
-│   │   ├── apple-touch-icon-72x72-precomposed.png
-│   │   ├── apple-touch-icon-precomposed.png
-│   │   ├── apple-touch-icon.png
-│   │   ├── crossdomain.xml
-│   │   ├── favicon.ico
-│   │   ├── humans.txt
-│   │   ├── img
-│   │   │   ├── glyphicons-halflings-white.png
-│   │   │   └── glyphicons-halflings.png
-│   │   ├── index.html
-│   │   ├── javascripts
-│   │   │   └── modernizr-2.6.2.min.js
-│   │   └── robots.txt
-│   ├── controllers
-│   ├── helpers
-│   ├── initialize.coffee
-│   ├── models
-│   ├── routes
-│   ├── styles
-│   │   └── application.styl
-│   ├── templates
-│   │   ├── application.hbs
-│   │   └── index.hbs
-│   └── views
-├── config.coffee
-├── generators
-│   ├── arraycontroller
-│   │   ├── arraycontroller.coffee.hbs
-│   │   └── generator.json
-│   ├── controller
-│   │   ├── controller.coffee.hbs
-│   │   └── generator.json
-│   ├── model
-│   │   ├── generator.json
-│   │   └── model.coffee.hbs
-│   ├── route
-│   │   ├── generator.json
-│   │   └── route.coffee.hbs
-│   ├── template
-│   │   ├── generator.json
-│   │   └── template.hbs.hbs
-│   └── view
-│       ├── generator.json
-│       └── view.coffee.hbs
-├── package.json
-├── test
-│   ├── assets
-│   │   └── test
-│   │       └── index.html
-│   ├── sample-tests
-│   │   └── array-test.coffee
-│   ├── test-helpers.coffee
-│   └── vendor
-│       ├── scripts
-│       │   ├── chai-1.4.0.js
-│       │   ├── mocha-1.7.3.js
-│       │   ├── sinon-1.5.2.js
-│       │   ├── sinon-chai-2.2.0.js
-│       │   └── test-helper.js
-│       └── styles
-│           └── mocha-1.7.2.css
-└── vendor
-    ├── scripts
-    │   ├── console-polyfill.js
-    │   ├── ember-1.0.0-rc.2.js
-    │   ├── handlebars-1.0.rc.3.js
-    │   ├── jquery-1.9.1.js
-    └── styles
-        └── normalize.css
-```
 
 ## License
 All of brunch-with-ember-reloaded is licensed under the MIT license.
