@@ -1,4 +1,4 @@
 App = require 'app'
 
-App.{{#camelize}}{{name}}{{/camelize}}View = Ember.View.extend
+module.exports = App.{{#camelize}}{{name}}{{/camelize}}View = Ember.View.extend
     templateName: '{{name}}'

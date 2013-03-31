@@ -1,4 +1,4 @@
 App = require 'app'
 
-App.{{#camelize}}{{name}}{{/camelize}}Controller = Ember.ObjectController.extend
+module.exports = App.{{#camelize}}{{name}}{{/camelize}}Controller = Ember.ObjectController.extend
     content: null
