@@ -50,13 +50,11 @@ skaffolt template <name> 			→ app/templates		name.hbs
 There's a few more commands you can use with scaffolt and also instruction on how to create your own generators, so make sure you check out the [docs](https://github.com/paulmillr/scaffolt#readme).
 
 ### Testing
-You can write your tests in the `test` folder. The skeleton puts a sample test case on `test/sample-tests/array-test.coffee`. To run see your tests just:
+You can write your tests in the `test` folder, just make sure they are named `*_test.coffee`. You can customize the test to user PhantomJS, Chrome, Firefox, Safari or Opera on the `test/karma.conf.js` file. There's a lot of other settings there as well. Run tests with:
 
 ```
-brunch watch -s
+cake test
 ```
-
-Open [http://localhost:3333/test/](http://localhost:3333/test/) on your browser.
 
 
 ## License

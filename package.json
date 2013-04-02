@@ -2,7 +2,7 @@
     "author": "Giovanni Collazo",
     "name": "brunch-with-ember-reloaded",
     "description": "A new and up-to-date Brunch skeleton for developing Ember applications",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "homepage": "",
     "repository": {
         "type": "git",
@@ -12,8 +12,7 @@
         "node": "~0.6.10 || 0.8 || 0.9"
     },
     "scripts": {
-        "start": "brunch watch --server",
-        "test": "brunch test"
+        "start": "brunch watch --server"
     },
     "dependencies": {
         "javascript-brunch": ">= 1.0 < 1.6",
@@ -29,8 +28,6 @@
         "ember-handlebars-brunch": "git://github.com/icholy/ember-handlebars-brunch.git"
     },
     "devDependencies": {
-        "chai": "1.2.0",
-        "sinon": "1.4.2",
-        "sinon-chai": "2.1.2"
+        "karma": "0.8.1"
     }
 }
