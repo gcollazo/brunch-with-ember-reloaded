@@ -4,11 +4,11 @@ A new and up-to-date [Brunch](http://brunch.io) skeleton for developing [Ember](
 ## Demo
 I built a demo app using this skeleton, based on the [Building an App with Ember.js](http://www.youtube.com/watch?v=Ga99hMi7wfY) video by [Tom Dale](http://twitter.com/tomdale).
 
-**Demo**: [ember-bloggr](http://dev.gcollazo.com/ember-bloggr)  
+**Demo**: [ember-bloggr](http://dev.gcollazo.com/ember-bloggr)
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember v1.0.0-rc.2](http://emberjs.com)
+- [Ember v1.0.0-rc.3](http://emberjs.com)
 - [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
 - [jQuery v1.9.1](http://jquery.com)
 - [HTML5 Boilerplate v4.1.0](http://html5boilerplate.com)
