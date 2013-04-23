@@ -11,7 +11,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 - [Ember v1.0.0-rc.3](http://emberjs.com)
 - [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
 - [jQuery v1.9.1](http://jquery.com)
-- [HTML5 Boilerplate v4.1.0](http://html5boilerplate.com)
+- [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
 
 ## Features
 - **CoffeeScript** - a little language that compiles into JavaScript.
