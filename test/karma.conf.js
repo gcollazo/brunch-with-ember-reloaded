@@ -6,16 +6,16 @@ basePath = '../';
 
 // list of files / patterns to load in the browser
 files = [
-    MOCHA,
-    MOCHA_ADAPTER,
+  MOCHA,
+  MOCHA_ADAPTER,
 
-    'public/javascripts/vendor.js',
-    'public/javascripts/app.js',
-    'public/test/javascripts/test-vendor.js',
+  'public/javascripts/vendor.js',
+  'public/javascripts/app.js',
+  'public/test/javascripts/test-vendor.js',
 
-    'test/helpers.coffee',
+  'test/helpers.coffee',
 
-    'test/**/*_test.coffee'
+  'test/**/*_test.coffee'
 ];
 
 // test results reporter to use
