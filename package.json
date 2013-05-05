@@ -1,33 +1,33 @@
 {
-    "author": "Giovanni Collazo",
-    "name": "brunch-with-ember-reloaded",
-    "description": "A new and up-to-date Brunch skeleton for developing Ember applications",
-    "version": "0.0.3",
-    "homepage": "",
-    "repository": {
-        "type": "git",
-        "url": ""
-    },
-    "engines": {
-        "node": "~0.6.10 || 0.8 || 0.9"
-    },
-    "scripts": {
-        "start": "brunch watch --server"
-    },
-    "dependencies": {
-        "javascript-brunch": ">= 1.0 < 1.6",
-        "coffee-script-brunch": ">= 1.0 < 1.6",
+  "author": "Giovanni Collazo",
+  "name": "brunch-with-ember-reloaded",
+  "description": "A new and up-to-date Brunch skeleton for developing Ember applications",
+  "version": "0.0.3",
+  "homepage": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": "~0.6.10 || 0.8 || 0.9"
+  },
+  "scripts": {
+    "start": "brunch watch --server"
+  },
+  "dependencies": {
+    "javascript-brunch": ">= 1.0 < 1.6",
+    "coffee-script-brunch": ">= 1.0 < 1.6",
 
-        "css-brunch": ">= 1.0 < 1.6",
-        "stylus-brunch": ">= 1.0 < 1.6",
+    "css-brunch": ">= 1.0 < 1.6",
+    "stylus-brunch": ">= 1.0 < 1.6",
 
-        "uglify-js-brunch": ">= 1.0 < 1.6",
-        "clean-css-brunch": ">= 1.0 < 1.6",
+    "uglify-js-brunch": ">= 1.0 < 1.6",
+    "clean-css-brunch": ">= 1.0 < 1.6",
 
-        "auto-reload-brunch": ">= 1.0 < 1.6",
-        "ember-handlebars-brunch": "1.0.3"
-    },
-    "devDependencies": {
-        "karma": "0.8.1"
-    }
+    "auto-reload-brunch": ">= 1.0 < 1.6",
+    "ember-handlebars-brunch": "1.0.3"
+  },
+  "devDependencies": {
+    "karma": "0.8.1"
+  }
 }

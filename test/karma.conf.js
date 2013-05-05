@@ -53,5 +53,5 @@ singleRun = true;
 
 // compile coffee scripts
 preprocessors = {
-    '**/*.coffee': 'coffee'
+  '**/*.coffee': 'coffee'
 };
