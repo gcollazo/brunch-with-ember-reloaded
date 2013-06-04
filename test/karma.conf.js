@@ -6,8 +6,8 @@ basePath = '../';
 
 // list of files / patterns to load in the browser
 files = [
-  MOCHA,
-  MOCHA_ADAPTER,
+  QUNIT,
+  QUNIT_ADAPTER,
 
   'public/javascripts/vendor.js',
   'public/javascripts/app.js',
