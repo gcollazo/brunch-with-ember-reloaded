@@ -8,8 +8,8 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember v1.0.0-rc.3](http://emberjs.com)
-- [Handlebars 1.0.0-rc.3](http://handlebarsjs.com)
+- [Ember v1.0.0-rc.5](http://emberjs.com)
+- [Handlebars 1.0.0-rc.4](http://handlebarsjs.com)
 - [jQuery v1.9.1](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
 
