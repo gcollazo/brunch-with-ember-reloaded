@@ -22,7 +22,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 ## Getting started
 
 ```
-brunch new <appname> --skeleton git@github.com:gcollazo/brunch-with-ember-reloaded.git
+brunch new gh:gcollazo/brunch-with-ember-reloaded <appname>
 cd <appname>
 brunch watch -s
 ```
