@@ -37,15 +37,15 @@ cake getemberdata
 When the script finishes just add `'vendor/scripts/ember-data-latest.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
 
 ### Generators
-This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install skaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
+This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install scaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
 
 ```
-skaffolt model <name> 				→ app/models/			Name.coffee
-skaffolt view <name>				→ app/views/			NameView.coffee
-skaffolt controller <name> 			→ app/controllers/	NameController.coffee
-skaffolt arraycontroller <name>		→ app/controllers/	NamesController.coffee
-skaffolt route <name> 				→ app/routes/			NameRoute.coffee
-skaffolt template <name> 			→ app/templates		name.hbs
+scaffolt model <name> 				→ app/models/			Name.coffee
+scaffolt view <name>				→ app/views/			NameView.coffee
+scaffolt controller <name> 			→ app/controllers/	NameController.coffee
+scaffolt arraycontroller <name>		→ app/controllers/	NamesController.coffee
+scaffolt route <name> 				→ app/routes/			NameRoute.coffee
+scaffolt template <name> 			→ app/templates		name.hbs
 ```
 There's a few more commands you can use with scaffolt and also instruction on how to create your own generators, so make sure you check out the [docs](https://github.com/paulmillr/scaffolt#readme).
 
