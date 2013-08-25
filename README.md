@@ -18,6 +18,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 
 ## Features
 
+- **Ember Data install script** - A data persistence library for Ember.js.
 - **CoffeeScript** - a little language that compiles into JavaScript.
 - **Stylus** - Expressive, dynamic, robust CSS pre-processor.
 - **auto-reload-brunch** - Adds automatic browser reloading support to brunch.
