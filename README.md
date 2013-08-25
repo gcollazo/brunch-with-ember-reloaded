@@ -24,7 +24,6 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 ```
 brunch new gh:gcollazo/brunch-with-ember-reloaded <appname>
 cd <appname>
-bower install
 brunch watch -s
 ```
 Open [http://localhost:3333](http://localhost:3333) on your browser.
