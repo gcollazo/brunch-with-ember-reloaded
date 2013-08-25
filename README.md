@@ -20,6 +20,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 - **uglify-js-brunch** - Adds UglifyJS support to brunch.
 
 ## Getting started
+Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/) and [Bower](http://bower.io/).
 
 ```
 brunch new gh:gcollazo/brunch-with-ember-reloaded <appname>
