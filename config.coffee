@@ -6,15 +6,10 @@ exports.config =
     javascripts:
       joinTo:
         'javascripts/app.js': /^app/
-        'javascripts/vendor.js': /^vendor/
+        'javascripts/vendor.js': /^(vendor|bower_components)/
 
       order:
-        before: [
-          'vendor/scripts/console-polyfill.js'
-          'vendor/scripts/jquery-1.9.1.js'
-          'vendor/scripts/handlebars-1.0.0.js'
-          'vendor/scripts/ember-1.0.0-rc.7.js'
-          ]
+        before: ['vendor/scripts/console-polyfill.js']
 
     stylesheets:
       joinTo:
@@ -27,16 +22,3 @@ exports.config =
       root: 'templates'
       joinTo: 'javascripts/app.js' : /^app/
 
-      modules:
-        addSourceURLs: true
-
-  # allow _ prefixed templates so partials work
-  conventions:
-    ignored: (path) ->
-      startsWith = (string, substring) ->
-        string.indexOf(substring, 0) is 0
-      sep = sysPath.sep
-      if path.indexOf("app#{sep}templates#{sep}") is 0
-        false
-      else
-        startsWith sysPath.basename(path), '_'
