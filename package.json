@@ -22,6 +22,6 @@
     "uglify-js-brunch": "~1.5.1",
     "clean-css-brunch": "~1.5.1",
     "auto-reload-brunch": "~1.5.2",
-    "ember-handlebars-brunch": "~1.0.4"
+    "ember-handlebars-brunch": "git://github.com/jpadilla/ember-handlebars-brunch.git"
   }
 }
