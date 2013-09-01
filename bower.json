@@ -13,11 +13,17 @@
     "bower_components"
   ],
   "dependencies": {
-    "ember": "~1.0.0-rc.7"
+    "ember": "1.0.0-rc.8",
+    "ember-data-shim": "~0.0.13",
+    "jquery": "~2.0.3"
   },
   "overrides": {
-    "jquery": {
-      "main": "jquery.js"
+    "handlebars": {
+      "main": "handlebars.runtime.js"
     }
+  },
+  "resolutions": {
+    "ember": "1.0.0-rc.8",
+    "jquery": "~2.0.3"
   }
 }

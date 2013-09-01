@@ -1,23 +1,18 @@
-# ===== Namespace =====
-App = require 'app'
-
-
-# ===== Router =====
-App.Router.map ->
-    # put your routes here
-
+# ===== Config =====
+require 'config/app'
+require 'config/routes'
+require 'config/store'
 
 # ===== Routes =====
 require 'routes/IndexRoute'
-
-
-# ===== Store =====
-
 
 # ===== Models =====
 
 
 # ===== Views =====
+
+
+# ===== Components =====
 
 
 # ===== Controllers =====
