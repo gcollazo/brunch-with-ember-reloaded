@@ -11,10 +11,12 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
+This skeleton uses [Bower](http://bower.io) to manage client side vendor libraries.
 
-- [Ember v1.0.0-rc.7](http://emberjs.com)
+- [Ember v1.0.0](http://emberjs.com)
+- [Ember Data v1.0.0-beta.1](https://github.com/emberjs/data)
 - [Handlebars 1.0.0](http://handlebarsjs.com)
-- [jQuery v1.9.1](http://jquery.com)
+- [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
 
 ## Features
@@ -36,28 +38,19 @@ brunch watch -s
 ```
 Open [http://localhost:3333](http://localhost:3333) on your browser.
 
-## Ember Data and Generators
-
-### Ember Data
-
-There's a little cake task to download the latest version of Ember Data from [builds.emberjs.com](http://builds.emberjs.com) and copy it to your `vendor/scripts` directory.
-
-```
-cake getemberdata
-```
-When the script finishes just add `'vendor/scripts/ember-data-latest.js'` to your `config.coffee` file just under `'vendor/scripts/ember-*.js'`.
-
-### Generators
+## Generators
 
 This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install scaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
 
 ```
-scaffolt model <name> 				→ app/models/			Name.coffee
-scaffolt view <name>				→ app/views/			NameView.coffee
-scaffolt controller <name> 			→ app/controllers/	NameController.coffee
-scaffolt arraycontroller <name>		→ app/controllers/	NamesController.coffee
-scaffolt route <name> 				→ app/routes/			NameRoute.coffee
-scaffolt template <name> 			→ app/templates		name.hbs
+scaffolt model <name>             →    app/models/Name.coffee
+scaffolt view <name>              →    app/views/NameView.coffee
+scaffolt controller <name>        →    app/controllers/NameController.coffee
+scaffolt arraycontroller <name>	  →    app/controllers/NamesController.coffee
+scaffolt route <name>             →    app/routes/NameRoute.coffee
+scaffolt template <name>          →    app/templatesname.hbs
+scaffolt component <name>         →    app/components/NameComponent.coffee
+                                       app/templates/components/name.hbs
 ```
 
 There are more commands you can do with scaffolt and also instruction on how to create your own generators, so make sure you check out the [docs](https://github.com/paulmillr/scaffolt#readme).
