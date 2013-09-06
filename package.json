@@ -2,7 +2,7 @@
   "author": "Giovanni Collazo",
   "name": "brunch-with-ember-reloaded",
   "description": "A new and up-to-date Brunch skeleton for developing Ember applications",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "homepage": "",
   "repository": {
     "type": "git",
@@ -23,5 +23,9 @@
     "clean-css-brunch": "~1.5.1",
     "auto-reload-brunch": "~1.5.2",
     "ember-handlebars-brunch": "git://github.com/jpadilla/ember-handlebars-brunch.git"
+  },
+  "devDependencies": {
+    "karma": "~0.10.2",
+    "karma-qunit": "*"
   }
 }
