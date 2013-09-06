@@ -55,9 +55,23 @@ scaffolt component <name>         →    app/components/NameComponent.coffee
 
 There are more commands you can do with scaffolt and also instruction on how to create your own generators, so make sure you check out the [docs](https://github.com/paulmillr/scaffolt#readme).
 
-## To-Do
+## Testing
 
-- [Testing](http://emberjs.com/guides/testing/integration/)
+To run you will need [Karma](https://github.com/karma-runner) you will need to install [phantomjs](https://github.com/ariya/phantomjs). If you want to run your tests on other browsers consult the Karma docs.
+
+```
+brew update && brew install phantomjs
+```
+
+To run tests continiously as you write code and tests (for now) you must open two terminal windows.
+
+```
+brunch watch -s
+```
+
+```
+karma start
+```
 
 ## License
 
