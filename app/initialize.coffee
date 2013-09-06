@@ -1,5 +1,5 @@
 # ===== Config =====
-require 'config/app'
+window.App = require 'config/app'
 require 'config/routes'
 require 'config/store'
 

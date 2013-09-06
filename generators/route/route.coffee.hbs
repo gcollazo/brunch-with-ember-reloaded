@@ -1,4 +1,2 @@
-App = require 'config/app'
-
 module.exports = App.{{#camelize}}{{name}}{{/camelize}}Route = Ember.Route.extend
   setupController: (controller) ->
