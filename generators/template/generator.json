@@ -1,4 +1,5 @@
 {
+  "name": "template",
   "files": [
     {
       "from": "template.hbs.hbs",

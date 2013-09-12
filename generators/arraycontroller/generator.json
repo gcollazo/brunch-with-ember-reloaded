@@ -1,4 +1,5 @@
 {
+  "name": "arraycontroller",
   "files": [
     {
       "from": "arraycontroller.coffee.hbs",

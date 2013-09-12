@@ -1,4 +1,5 @@
 {
+  "name": "view",
   "files": [
     {
       "from": "view.coffee.hbs",
