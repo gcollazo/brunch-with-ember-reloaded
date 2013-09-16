@@ -1,4 +1,5 @@
 {
+  "name": "route",
   "files": [
     {
       "from": "route.coffee.hbs",

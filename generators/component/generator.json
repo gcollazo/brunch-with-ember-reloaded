@@ -1,4 +1,5 @@
 {
+  "name": "component",
   "files": [
     {
       "from": "component.coffee.hbs",

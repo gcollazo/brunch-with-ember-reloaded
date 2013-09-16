@@ -1,4 +1,5 @@
 {
+  "name": "controller",
   "files": [
     {
       "from": "controller.coffee.hbs",
