@@ -14,7 +14,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 This skeleton uses [Bower](http://bower.io) to manage client side vendor libraries.
 
 - [Ember v1.0.0](http://emberjs.com)
-- [Ember Data v1.0.0-beta.1](https://github.com/emberjs/data)
+- [Ember Data v1.0.0-beta.2](https://github.com/emberjs/data)
 - [Handlebars 1.0.0](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)

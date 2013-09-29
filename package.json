@@ -21,7 +21,7 @@
     "stylus-brunch": "~1.5.1",
     "uglify-js-brunch": "~1.5.1",
     "clean-css-brunch": "~1.5.1",
-    "auto-reload-brunch": "~1.5.2",
+    "auto-reload-brunch": "~1.7.0",
     "ember-handlebars-brunch": "~1.0.0"
   },
   "devDependencies": {
