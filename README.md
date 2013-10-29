@@ -11,12 +11,10 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-This skeleton uses [Bower](http://bower.io) to manage client side vendor libraries.
-
-- [Ember v1.0.0](http://emberjs.com)
-- [Ember Data v1.0.0-beta.2](https://github.com/emberjs/data)
+- [Ember v1.1.2](http://emberjs.com)
+- [Ember Data v1.0.0-beta.3](https://github.com/emberjs/data)
 - [Handlebars 1.0.0](http://handlebarsjs.com)
-- [jQuery v2.0.3](http://jquery.com)
+- [jQuery v1.9.1](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
 
 ## Features
