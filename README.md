@@ -12,8 +12,8 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 
 ## Versions
 - [Ember v1.1.2](http://emberjs.com)
-- [Ember Data v1.0.0-beta.3](https://github.com/emberjs/data)
-- [Handlebars 1.0.0](http://handlebarsjs.com)
+- [Ember Data v1.0.0-beta.3-2-ga01195b](https://github.com/emberjs/data)
+- [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
 

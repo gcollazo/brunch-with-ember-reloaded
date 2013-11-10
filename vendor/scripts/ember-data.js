@@ -7,8 +7,8 @@
 
 
 
-// Version: v1.0.0-beta.3
-// Last commit: 2259c27 (2013-09-28 19:24:07 -0700)
+// Version: v1.0.0-beta.3-2-ga01195b
+// Last commit: a01195b (2013-10-01 19:41:06 -0700)
 
 
 (function() {
@@ -64,7 +64,7 @@ var define, requireModule;
 
 if ('undefined' === typeof DS) {
   DS = Ember.Namespace.create({
-    VERSION: '1.0.0-beta.2'
+    VERSION: '1.0.0-beta.3'
   });
 
   if ('undefined' !== typeof window) {
@@ -75,6 +75,7 @@ if ('undefined' === typeof DS) {
     Ember.libraries.registerCoreLibrary('Ember Data', DS.VERSION);
   }
 }
+
 })();
 
 
