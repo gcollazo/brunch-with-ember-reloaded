@@ -27,7 +27,3 @@ exports.config =
       precompile: true
       root: 'templates'
       joinTo: 'javascripts/app.js' : /^app/
-
-  es6ModuleTranspiler:
-    debug: yes
-
