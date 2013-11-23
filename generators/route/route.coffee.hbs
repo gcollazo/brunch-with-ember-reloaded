@@ -1,2 +1,5 @@
-module.exports = App.{{#camelize}}{{name}}{{/camelize}}Route = Ember.Route.extend
-  setupController: (controller) ->
+export default = App.{{#camelize}}{{name}}{{/camelize}}Route = Ember.Route.extend({
+  setupController: function(controller) {
+
+  }
+});

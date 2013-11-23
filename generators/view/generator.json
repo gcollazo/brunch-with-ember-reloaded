@@ -2,8 +2,8 @@
   "name": "view",
   "files": [
     {
-      "from": "view.coffee.hbs",
-      "to": "app/views/{{#camelize}}{{name}}{{/camelize}}View.coffee"
+      "from": "view.js.hbs",
+      "to": "app/views/{{#camelize}}{{name}}{{/camelize}}View.js"
     }
   ],
   "dependencies": []
