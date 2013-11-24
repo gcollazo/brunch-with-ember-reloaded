@@ -11,8 +11,8 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember v1.1.2](http://emberjs.com)
-- [Ember Data v1.0.0-beta.3-2-ga01195b](https://github.com/emberjs/data)
+- [Ember v1.2.0](http://emberjs.com)
+- [Ember Data 1.0.0-beta.4+canary.e7996c4d](https://github.com/emberjs/data)
 - [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
@@ -69,6 +69,14 @@ brunch watch -s
 
 ```
 karma start
+```
+
+## Updating Ember
+
+To updated ember.js, ember-data.js and handlebars.js to the latest stable versions, just run this command on the project root.
+
+```
+npm run emberupdate
 ```
 
 ## License
