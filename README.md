@@ -75,6 +75,14 @@ brunch watch -s
 karma start
 ```
 
+## Updating Ember
+
+To updated ember.js, ember-data.js and handlebars.js to the latest stable versions, just run this command on the project root.
+
+```
+npm run emberupdate
+```
+
 ## License
 
 All of brunch-with-ember-reloaded is licensed under the MIT license.

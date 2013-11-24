@@ -1,15 +1,13 @@
 // ==========================================================================
 // Project:   Ember Data
-// Copyright: Â©2011-2012 Tilde Inc. and contributors.
-//            Portions Â©2011 Living Social Inc. and contributors.
+// Copyright: Copyright 2011-2013 Tilde Inc. and contributors.
+//            Portions Copyright 2011 LivingSocial Inc.
 // License:   Licensed under MIT license (see license.js)
 // ==========================================================================
 
 
 
-// Version: v1.0.0-beta.3-2-ga01195b
-// Last commit: a01195b (2013-10-01 19:41:06 -0700)
-
+ // Version: 1.0.0-beta.4+canary.e7996c4d
 
 (function() {
 var define, requireModule;
@@ -61,10 +59,10 @@ var define, requireModule;
   @class DS
   @static
 */
-
+var DS;
 if ('undefined' === typeof DS) {
   DS = Ember.Namespace.create({
-    VERSION: '1.0.0-beta.3'
+    VERSION: '1.0.0-beta.4+canary.e7996c4d'
   });
 
   if ('undefined' !== typeof window) {
@@ -185,6 +183,11 @@ DS.JSONSerializer = Ember.Object.extend({
 
   /**
     You can use this method to customize how polymorphic objects are serialized.
+
+    @method serializePolymorphicType
+    @param {DS.Model} record
+    @param {Object} json
+    @param relationship
   */
   serializePolymorphicType: Ember.K,
 
@@ -227,8 +230,10 @@ DS.JSONSerializer = Ember.Object.extend({
 
   // HELPERS
 
-  transformFor: function(attributeType) {
-    return this.container.lookup('transform:' + attributeType);
+  transformFor: function(attributeType, skipAssertion) {
+    var transform = this.container.lookup('transform:' + attributeType);
+    Ember.assert("Unable to find transform for '" + attributeType + "'", skipAssertion || !!transform);
+    return transform;
   }
 });
 
@@ -355,7 +360,7 @@ DS.DebugAdapter = Ember.DataAdapter.extend({
 DS.Transform = Ember.Object.extend({
 
   serialize: Ember.required(),
-
+  
   deserialize: Ember.required()
 
 });
@@ -435,7 +440,7 @@ DS.DateTransform = DS.Transform.extend({
     } else {
       return null;
     }
-  }
+  } 
 
 });
 
@@ -582,7 +587,7 @@ Ember.onLoad('Ember.Application', function(Application) {
 /**
   Date.parse with progressive enhancement for ISO 8601 <https://github.com/csnover/js-iso8601>
 
-  Â© 2011 Colin Snover <http://zetafleet.com>
+  © 2011 Colin Snover <http://zetafleet.com>
 
   Released under MIT license.
 
@@ -601,12 +606,12 @@ var origParse = Date.parse, numericKeys = [ 1, 4, 5, 6, 7, 10, 11 ];
 Ember.Date.parse = function (date) {
     var timestamp, struct, minutesOffset = 0;
 
-    // ES5 Â§15.9.4.2 states that the string should attempt to be parsed as a Date Time String Format string
-    // before falling back to any implementation-specific date parsing, so thatâ€™s what we do, even if native
+    // ES5 §15.9.4.2 states that the string should attempt to be parsed as a Date Time String Format string
+    // before falling back to any implementation-specific date parsing, so that’s what we do, even if native
     // implementations could be faster
-    //              1 YYYY                2 MM       3 DD           4 HH    5 mm       6 ss        7 msec        8 Z 9 Â±    10 tzHH    11 tzmm
+    //              1 YYYY                2 MM       3 DD           4 HH    5 mm       6 ss        7 msec        8 Z 9 ±    10 tzHH    11 tzmm
     if ((struct = /^(\d{4}|[+\-]\d{6})(?:-(\d{2})(?:-(\d{2}))?)?(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{3}))?)?(?:(Z)|([+\-])(\d{2})(?::(\d{2}))?)?)?$/.exec(date))) {
-        // avoid NaN timestamps caused by â€œundefinedâ€ values being passed to Date.UTC
+        // avoid NaN timestamps caused by “undefined” values being passed to Date.UTC
         for (var i = 0, k; (k = numericKeys[i]); ++i) {
             struct[k] = +struct[k] || 0;
         }
@@ -1630,7 +1635,7 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
     Returns true if a record for a given type and ID is already loaded.
 
     @method hasRecordForId
-    @param {String} type
+    @param {DS.Model} type
     @param {String|Integer} id
     @returns Boolean
   */
@@ -1893,9 +1898,14 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
     If any of a record's properties change, or if it changes state, the
     filter function will be invoked again to determine whether it should
     still be in the array.
+    
+    Optionally you can pass a query which will be triggered at first. The
+    results returned by the server could then appear in the filter if they
+    match the filter function.
 
     @method filter
     @param {Class} type
+    @param {Object} query optional query
     @param {Function} filter
     @return {DS.FilteredRecordArray}
   */
@@ -2168,21 +2178,22 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
     etc.)
 
     @method modelFor
-    @param {String} key
+    @param {String or subclass of DS.Model} key
     @returns {subclass of DS.Model}
   */
   modelFor: function(key) {
-    if (typeof key !== 'string') {
-      return key;
+    var factory;
+
+    if (typeof key === 'string') {
+      factory = this.container.lookupFactory('model:' + key);
+      Ember.assert("No model was found for '" + key + "'", factory);
+      factory.typeKey = key;
+    } else {
+      // A factory already supplied.
+      factory = key;
     }
 
-    var factory = this.container.lookupFactory('model:'+key);
-
-    Ember.assert("No model was found for '" + key + "'", factory);
-
     factory.store = this;
-    factory.typeKey = key;
-
     return factory;
   },
 
@@ -2292,7 +2303,7 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
     store.pushPayload('post', pushData);
     ```
 
-    @method push
+    @method pushPayload
     @param {String} type
     @param {Object} payload
   */
@@ -2524,6 +2535,7 @@ function normalizeRelationships(store, type, data, record) {
       deserializeRecordId(store, data, key, relationship, value);
     } else if (kind === 'hasMany') {
       deserializeRecordIds(store, data, key, relationship, value);
+      addUnsavedRecords(record, key, value);
     }
   });
 
@@ -2557,6 +2569,14 @@ function typeFor(relationship, key, data) {
 function deserializeRecordIds(store, data, key, relationship, ids) {
   for (var i=0, l=ids.length; i<l; i++) {
     deserializeRecordId(store, ids, i, relationship, ids[i]);
+  }
+}
+
+// If there are any unsaved records that are in a hasMany they won't be
+// in the payload, so add them back in manually.
+function addUnsavedRecords(record, key, data) {
+  if(record) {
+    data.pushObjects(record.get(key).filterBy('isNew'));
   }
 }
 
@@ -2654,6 +2674,7 @@ function _findBelongsTo(adapter, store, record, link, relationship, resolver) {
 
     var record = store.push(relationship.type, payload);
     record.updateBelongsTo(relationship.key, record);
+    return record;
   }).then(resolver.resolve, resolver.reject);
 }
 
@@ -3273,6 +3294,10 @@ var RootState = {
         record.send('invokeLifecycleCallbacks', get(record, 'lastDirtyType'));
       },
 
+      // loaded.saved.notFound would be triggered by a failed
+      // `reload()` on an unchanged record
+      notFound: Ember.K
+
     },
 
     // A record is in this state after it has been locally
@@ -3597,6 +3622,8 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     for (i=0, l=setups.length; i<l; i++) {
       setups[i].setup(this);
     }
+
+    this.updateRecordArraysLater();
   },
 
   _unhandledEvent: function(state, name, context) {
@@ -3632,8 +3659,27 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     this.send('pushedData');
   },
 
+  /**
+    Marks the record as deleted but does not save it. You must call
+    `save` afterwards if you want to persist it. You might use this
+    method if you want to allow the user to still `rollback()` a
+    delete after it was made.
+
+    @method deleteRecord
+  */
   deleteRecord: function() {
     this.send('deleteRecord');
+  },
+
+  /**
+    Same as `deleteRecord`, but saves the record immediately.
+
+    @method destroyRecord
+    @returns Promise
+  */
+  destroyRecord: function() {
+    this.deleteRecord();
+    return this.save();
   },
 
   unloadRecord: function() {
@@ -4643,7 +4689,7 @@ function asyncBelongsTo(type, options, meta) {
 
     if (arguments.length === 2) {
       Ember.assert("You can only add a '" + type + "' record to this relationship", !value || value instanceof store.modelFor(type));
-      return value === undefined ? null : value;
+      return value === undefined ? null : DS.PromiseObject.create({ promise: Ember.RSVP.resolve(value) });
     }
 
     var link = data.links && data.links[key],
@@ -4944,7 +4990,7 @@ DS.Model.reopenClass({
     var options = this.metaForProperty(name).options;
 
     if (options.inverse === null) { return null; }
-
+    
     var inverseName, inverseKind;
 
     if (options.inverse) {
@@ -5086,7 +5132,7 @@ DS.Model.reopenClass({
         App.Blog = DS.Model.extend({
           users: DS.hasMany('user'),
           owner: DS.belongsTo('user'),
-
+  
           posts: DS.hasMany('post')
         });
 
@@ -5791,7 +5837,7 @@ DS.FixtureAdapter = DS.Adapter.extend({
   },
 
   /**
-    Implement this method in order to provide provide json for CRUD methods
+    Implement this method in order to provide json for CRUD methods
 
     @method mockJSON
     @param  type
@@ -6524,6 +6570,7 @@ DS.RESTSerializer = DS.JSONSerializer.extend({
     in data streaming in from your server structured the same way
     that fetches and saves are structured.
 
+    @method pushPayload
     @param {DS.Store} store
     @param {Object} payload
   */
@@ -6799,7 +6846,7 @@ var forEach = Ember.ArrayPolyfills.forEach;
 
   ### Conventional Names
 
-  Attribute names in your JSON payload should be the camelcased versions of
+  Attribute names in your JSON payload should be the camelCased versions of
   the attributes in your Ember.js models.
 
   For example, if you have a `Person` model:
@@ -6850,14 +6897,14 @@ var forEach = Ember.ArrayPolyfills.forEach;
 
   ### Headers customization
 
-  Some APIs require HTTP headers, eg to provide an API key. An array of
+  Some APIs require HTTP headers, e.g. to provide an API key. An array of
   headers can be added to the adapter which are passed with every request:
 
   ```js
   DS.RESTAdapter.reopen({
     headers: {
       "API_KEY": "secret key",
-      "ANOTHER_HEADER": "asdsada"
+      "ANOTHER_HEADER": "Some header value"
     }
   });
   ```
@@ -6874,8 +6921,10 @@ DS.RESTAdapter = DS.Adapter.extend({
     Called by the store in order to fetch the JSON for a given
     type and ID.
 
-    It makes an Ajax request to a URL computed by `buildURL`, and returns a
+    The `find` method makes an Ajax request to a URL computed by `buildURL`, and returns a
     promise for the resulting payload.
+
+    This method performs an HTTP `GET` request with the id provided as part of the querystring. 
 
     @method find
     @see RESTAdapter/buildURL
@@ -6893,7 +6942,7 @@ DS.RESTAdapter = DS.Adapter.extend({
     Called by the store in order to fetch a JSON array for all
     of the records for a given type.
 
-    It makes an Ajax request to a URL computed by `buildURL`, and returns a
+    The `findAll` method makes an Ajax (HTTP GET) request to a URL computed by `buildURL`, and returns a
     promise for the resulting payload.
 
     @method findAll
@@ -6918,11 +6967,11 @@ DS.RESTAdapter = DS.Adapter.extend({
     Called by the store in order to fetch a JSON array for
     the records that match a particular query.
 
-    The query is a simple JavaScript object that will be passed directly
-    to the server as parameters.
-
-    It makes an Ajax request to a URL computed by `buildURL`, and returns a
+    The `findQuery` method makes an Ajax (HTTP GET) request to a URL computed by `buildURL`, and returns a
     promise for the resulting payload.
+
+    The `query` argument is a simple JavaScript object that will be passed directly
+    to the server as parameters.
 
     @method findQuery
     @see RESTAdapter/buildURL
@@ -6957,11 +7006,11 @@ DS.RESTAdapter = DS.Adapter.extend({
     ids[]=1&ids[]=2&ids[]=3
     ```
 
-    Many servers, such as Rails and PHP, will automatically convert this
+    Many servers, such as Rails and PHP, will automatically convert this URL-encoded array
     into an Array for you on the server-side. If you want to encode the
     IDs, differently, just override this (one-line) method.
 
-    It makes an Ajax request to a URL computed by `buildURL`, and returns a
+    The `findMany` method makes an Ajax (HTTP GET) request to a URL computed by `buildURL`, and returns a
     promise for the resulting payload.
 
     @method findMany
@@ -6995,7 +7044,9 @@ DS.RESTAdapter = DS.Adapter.extend({
 
     This method will be called with the parent record and `/posts/1/comments`.
 
-    It will make an Ajax request to the originally specified URL.
+    The `findHasMany` method will make an Ajax (HTTP GET) request to the originally specified URL.
+    If the URL is host-relative (starting with a single slash), the
+    request will use the host specified on the adapter (if any).
 
     @method findHasMany
     @see RESTAdapter/buildURL
@@ -7006,8 +7057,13 @@ DS.RESTAdapter = DS.Adapter.extend({
     @returns Promise
   */
   findHasMany: function(store, record, url) {
-    var id   = get(record, 'id'),
+    var host = get(this, 'host'),
+        id   = get(record, 'id'),
         type = record.constructor.typeKey;
+
+    if (host && url.charAt(0) === '/' && url.charAt(1) !== '/') {
+      url = host + url;
+    }
 
     return this.ajax(this.urlPrefix(url, this.buildURL(type, id)), 'GET');
   },
@@ -7031,7 +7087,7 @@ DS.RESTAdapter = DS.Adapter.extend({
 
     This method will be called with the parent record and `/people/1/group`.
 
-    It will make an Ajax request to the originally specified URL.
+    The `findBelongsTo` method will make an Ajax (HTTP GET) request to the originally specified URL.
 
     @method findBelongsTo
     @see RESTAdapter/buildURL
@@ -7050,9 +7106,10 @@ DS.RESTAdapter = DS.Adapter.extend({
 
   /**
     Called by the store when a newly created record is
-    `save`d.
+    saved via the `save` method on a model record instance.
 
-    It serializes the record, and `POST`s it to a URL generated by `buildURL`.
+    The `createRecord` method serializes the record and makes an Ajax (HTTP POST) request 
+    to a URL computed by `buildURL`.
 
     See `serialize` for information on how to customize the serialized form
     of a record.
@@ -7076,9 +7133,11 @@ DS.RESTAdapter = DS.Adapter.extend({
   },
 
   /**
-    Called by the store when an existing record is `save`d.
-
-    It serializes the record, and `POST`s it to a URL generated by `buildURL`.
+    Called by the store when an existing record is saved 
+    via the `save` method on a model record instance.
+    
+    The `updateRecord` method serializes the record and makes an Ajax (HTTP PUT) request 
+    to a URL computed by `buildURL`.
 
     See `serialize` for information on how to customize the serialized form
     of a record.
@@ -7104,9 +7163,9 @@ DS.RESTAdapter = DS.Adapter.extend({
   },
 
   /**
-    Called by the store when an deleted record is `save`d.
+    Called by the store when a record is deleted.
 
-    It serializes the record, and `POST`s it to a URL generated by `buildURL`.
+    The `deleteRecord` method  makes an Ajax (HTTP DELETE) request to a URL computed by `buildURL`.
 
     @method deleteRecord
     @see RESTAdapter/buildURL
@@ -7212,9 +7271,9 @@ DS.RESTAdapter = DS.Adapter.extend({
   /**
     Takes an ajax response, and returns a relavant error.
 
-    By default, it has the following behavior:
+    By default, the `ajaxError` method has the following behavior:
 
-    * It simply returns the ajax response.
+    * It simply returns the ajax response (jqXHR).
 
     @method ajaxError
     @param  jqXHR
@@ -7235,7 +7294,7 @@ DS.RESTAdapter = DS.Adapter.extend({
     or `extractArray` (depending on whether the original query was for one record or
     many records).
 
-    By default, it has the following behavior:
+    By default, `ajax` method has the following behavior:
 
     * It sets the response `dataType` to `"json"`
     * If the HTTP method is not `"GET"`, it sets the `Content-Type` to be
@@ -7254,25 +7313,7 @@ DS.RESTAdapter = DS.Adapter.extend({
     var adapter = this;
 
     return new Ember.RSVP.Promise(function(resolve, reject) {
-      hash = hash || {};
-      hash.url = url;
-      hash.type = type;
-      hash.dataType = 'json';
-      hash.context = adapter;
-
-      if (hash.data && type !== 'GET') {
-        hash.contentType = 'application/json; charset=utf-8';
-        hash.data = JSON.stringify(hash.data);
-      }
-
-      if (adapter.headers !== undefined) {
-        var headers = adapter.headers;
-        hash.beforeSend = function (xhr) {
-          forEach.call(Ember.keys(headers), function(key) {
-            xhr.setRequestHeader(key, headers[key]);
-          });
-        };
-      }
+      hash = adapter.ajaxOptions(url, type, hash);
 
       hash.success = function(json) {
         Ember.run(null, resolve, json);
@@ -7284,6 +7325,31 @@ DS.RESTAdapter = DS.Adapter.extend({
 
       Ember.$.ajax(hash);
     });
+  },
+
+  ajaxOptions: function(url, type, hash) {
+    hash = hash || {};
+    hash.url = url;
+    hash.type = type;
+    hash.dataType = 'json';
+    hash.context = this;
+
+    if (hash.data && type !== 'GET') {
+      hash.contentType = 'application/json; charset=utf-8';
+      hash.data = JSON.stringify(hash.data);
+    }
+
+    if (this.headers !== undefined) {
+      var headers = this.headers;
+      hash.beforeSend = function (xhr) {
+        forEach.call(Ember.keys(headers), function(key) {
+          xhr.setRequestHeader(key, headers[key]);
+        });
+      };
+    }
+
+
+    return hash;
   }
 
 });
@@ -7383,26 +7449,6 @@ DS.Model.reopen({
 
 
 (function() {
-//Copyright (C) 2011 by Living Social, Inc.
-
-//Permission is hereby granted, free of charge, to any person obtaining a copy of
-//this software and associated documentation files (the "Software"), to deal in
-//the Software without restriction, including without limitation the rights to
-//use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-//of the Software, and to permit persons to whom the Software is furnished to do
-//so, subject to the following conditions:
-
-//The above copyright notice and this permission notice shall be included in all
-//copies or substantial portions of the Software.
-
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-//SOFTWARE.
-
 /**
   Ember Data
 
@@ -7891,6 +7937,11 @@ DS.ActiveModelSerializer = DS.RESTSerializer.extend({
           payload = hash[payloadKey];
           if (payload && payload.type) {
             payload.type = this.typeForRoot(payload.type);
+          } else if (payload && relationship.kind === "hasMany") {
+            var self = this;
+            forEach(payload, function(single) {
+              single.type = self.typeForRoot(single.type);
+            });
           }
         } else {
           payloadKey = this.keyForRelationship(key, relationship.kind);
@@ -7959,6 +8010,8 @@ function updatePayloadWithEmbedded(store, serializer, type, partial, payload) {
       payload[embeddedTypeKey] = payload[embeddedTypeKey] || [];
 
       forEach(partial[attribute], function(data) {
+        var embeddedType = store.modelFor(relationship.type.typeKey);
+        updatePayloadWithEmbedded(store, serializer, embeddedType, data, payload);
         ids.push(data[primaryKey]);
         payload[embeddedTypeKey].push(data);
       });
@@ -7986,6 +8039,10 @@ var forEach = Ember.EnumerableUtils.forEach;
   It has been designed to work out of the box with the
   [active_model_serializers](http://github.com/rails-api/active_model_serializers)
   Ruby gem.
+
+  This adapter extends the DS.RESTAdapter by making consistent use of the camelization, 
+  decamelization and pluralization methods to normalize the serialized JSON into a 
+  format that is compatible with a conventional Rails backend and Ember Data. 
 
   ## JSON Structure
 
@@ -8028,8 +8085,8 @@ var forEach = Ember.EnumerableUtils.forEach;
 DS.ActiveModelAdapter = DS.RESTAdapter.extend({
   defaultSerializer: '_ams',
   /**
-    The ActiveModelAdapter overrides the `pathForType` method
-    to build underscored URLs.
+    The ActiveModelAdapter overrides the `pathForType` method to build 
+    underscored URLs by decamelizing and pluralizing the object type name.
 
     ```js
       this.pathForType("famousPerson");
@@ -8049,6 +8106,13 @@ DS.ActiveModelAdapter = DS.RESTAdapter.extend({
     The ActiveModelAdapter overrides the `ajaxError` method
     to return a DS.InvalidError for all 422 Unprocessable Entity
     responses.
+    
+    A 422 HTTP response from the server generally implies that the request
+    was well formed but the API was unable to process it because the 
+    content was not semantically correct or meaningful per the API.
+    
+    For more information on 422 HTTP Error code see 11.2 WebDAV RFC 4918
+    https://tools.ietf.org/html/rfc4918#section-11.2 
 
     @method ajaxError
     @param jqXHR
