@@ -33,7 +33,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/).
 
 ```
-git clone git@github.com:gcollazo/brunch-with-ember-reloaded.git -b es6
+git clone https://github.com/gcollazo/brunch-with-ember-reloaded.git -b es6
 brunch new ./brunch-with-ember-reloaded/ myappp
 cd myapp
 brunch w -s
