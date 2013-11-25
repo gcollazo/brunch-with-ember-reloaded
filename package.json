@@ -23,7 +23,7 @@
     "clean-css-brunch": "~1.7.0",
     "auto-reload-brunch": "~1.7.0",
     "ember-handlebars-brunch": "~1.0.0",
-    "es6-module-transpiler-brunch": "~0.0.4"
+    "es6-module-transpiler-brunch": "~0.0.5"
   },
   "devDependencies": {
     "karma": "~0.10.2",
