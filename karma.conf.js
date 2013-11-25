@@ -16,8 +16,8 @@ module.exports = function(config) {
     files: [
       'public/javascripts/vendor.js',
       'public/javascripts/app.js',
-      'test/helpers.coffee',
-      'test/**/*_test.coffee'
+      'test/helpers.js',
+      'test/**/*_test.js'
     ],
 
 
