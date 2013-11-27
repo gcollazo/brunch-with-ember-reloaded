@@ -24,6 +24,12 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 - **auto-reload-brunch** - Adds automatic browser reloading support to brunch.
 - **uglify-js-brunch** - Adds UglifyJS support to brunch.
 
+## Other versions of this skeleton
+
+- [ES6](https://github.com/gcollazo/brunch-with-ember-reloaded/tree/es6): Experimental version using ES6 module syntax.
+- [CoffeeScript](https://github.com/gcollazo/brunch-with-ember-reloaded/tree/coffeescript)
+
+
 ## Getting started
 
 Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/) and [Bower](http://bower.io/).
