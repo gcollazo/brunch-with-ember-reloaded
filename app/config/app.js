@@ -3,4 +3,4 @@ var config = {
     LOG_TRANSITIONS_INTERNAL: false
 };
 
-export default = Ember.Application.create(config);
+module.exports = Ember.Application.create(config);

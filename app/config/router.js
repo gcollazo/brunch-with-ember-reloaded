@@ -1,3 +1,3 @@
-export default = App.Router.map(function() {
+module.exports = App.Router.map(function() {
     // this.resource('about');
 });

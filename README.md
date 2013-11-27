@@ -1,9 +1,6 @@
-# Brunch with Ember Reloaded - (es6 branch)
+# Brunch with Ember Reloaded
 
 A [Brunch](http://brunch.io) skeleton for creating ambitious web applications using [Ember.js](http://emberjs.com). Based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
-
-## ES6 Branch
-This branch is basically the same setup as `master` but it uses plain old JavaScript instead of CoffeeScript and it adds [es6-module-transpiler-brunch](https://github.com/gcollazo/es6-module-transpiler-brunch) which allows the use of the ES6 module syntax.
 
 ## Demo
 
@@ -19,7 +16,6 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 - [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
-- [es6-module-transpiler-brunch](https://github.com/gcollazo/es6-module-transpiler-brunch)
 
 ## Features
 
@@ -30,13 +26,12 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 
 ## Getting started
 
-Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/).
+Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/) and [Bower](http://bower.io/).
 
 ```
-git clone https://github.com/gcollazo/brunch-with-ember-reloaded.git -b es6
-brunch new ./brunch-with-ember-reloaded/ myappp
-cd myapp
-brunch w -s
+brunch new gh:gcollazo/brunch-with-ember-reloaded <appname>
+cd <appname>
+brunch watch -s
 ```
 Open [http://localhost:3333](http://localhost:3333) on your browser.
 
@@ -45,13 +40,13 @@ Open [http://localhost:3333](http://localhost:3333) on your browser.
 This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install scaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
 
 ```
-scaffolt model <name>             →    app/models/Name.js
-scaffolt view <name>              →    app/views/NameView.js
-scaffolt controller <name>        →    app/controllers/NameController.js
-scaffolt arraycontroller <name>	  →    app/controllers/NamesController.js
-scaffolt route <name>             →    app/routes/NameRoute.js
+scaffolt model <name>             →    app/models/Name.coffee
+scaffolt view <name>              →    app/views/NameView.coffee
+scaffolt controller <name>        →    app/controllers/NameController.coffee
+scaffolt arraycontroller <name>   →    app/controllers/NamesController.coffee
+scaffolt route <name>             →    app/routes/NameRoute.coffee
 scaffolt template <name>          →    app/templatesname.hbs
-scaffolt component <name>         →    app/components/NameComponent.js
+scaffolt component <name>         →    app/components/NameComponent.coffee
                                        app/templates/components/name.hbs
 ```
 

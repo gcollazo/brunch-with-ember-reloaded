@@ -1,3 +1,3 @@
-export default = App.Store = DS.Store.extend({
+module.exports = App.Store = DS.Store.extend({
   revision: 13
 });
