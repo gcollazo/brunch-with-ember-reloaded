@@ -16,12 +16,11 @@
     "emberupdate": "curl http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-latest.js > vendor/scripts/handlebars.js && curl http://builds.emberjs.com/release/ember.js > vendor/scripts/ember.js && curl http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.js > vendor/scripts/ember-data.js"
   },
   "dependencies": {
-    "javascript-brunch": "~1.5.1",
-    "coffee-script-brunch": "~1.5.1",
-    "css-brunch": "~1.5.1",
-    "stylus-brunch": "~1.5.1",
-    "uglify-js-brunch": "~1.5.1",
-    "clean-css-brunch": "~1.5.1",
+    "javascript-brunch": "~1.7.0",
+    "css-brunch": "~1.7.0",
+    "stylus-brunch": "~1.7.0",
+    "uglify-js-brunch": "~1.7.0",
+    "clean-css-brunch": "~1.7.0",
     "auto-reload-brunch": "~1.7.0",
     "ember-handlebars-brunch": "~1.0.0"
   },

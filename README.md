@@ -20,7 +20,6 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 ## Features
 
 - **Ember Data install script** - A data persistence library for Ember.js.
-- **CoffeeScript** - a little language that compiles into JavaScript.
 - **Stylus** - Expressive, dynamic, robust CSS pre-processor.
 - **auto-reload-brunch** - Adds automatic browser reloading support to brunch.
 - **uglify-js-brunch** - Adds UglifyJS support to brunch.
@@ -44,7 +43,7 @@ This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#read
 scaffolt model <name>             →    app/models/Name.coffee
 scaffolt view <name>              →    app/views/NameView.coffee
 scaffolt controller <name>        →    app/controllers/NameController.coffee
-scaffolt arraycontroller <name>	  →    app/controllers/NamesController.coffee
+scaffolt arraycontroller <name>   →    app/controllers/NamesController.coffee
 scaffolt route <name>             →    app/routes/NameRoute.coffee
 scaffolt template <name>          →    app/templatesname.hbs
 scaffolt component <name>         →    app/components/NameComponent.coffee
