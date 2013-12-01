@@ -11,18 +11,11 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember v1.2.0](http://emberjs.com)
-- [Ember Data 1.0.0-beta.4+canary.e7996c4d](https://github.com/emberjs/data)
+- [Ember 1.2.1+pre.ce3a6b7c](http://emberjs.com)
+- [Ember Data 1.0.0-beta.4+canary.7af6fcb0](https://github.com/emberjs/data)
 - [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
-- [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
-
-## Features
-
-- **Ember Data install script** - A data persistence library for Ember.js.
-- **Stylus** - Expressive, dynamic, robust CSS pre-processor.
-- **auto-reload-brunch** - Adds automatic browser reloading support to brunch.
-- **uglify-js-brunch** - Adds UglifyJS support to brunch.
+- [HTML5 Boilerplate v4.3.0](http://html5boilerplate.com)
 
 ## Other versions of this skeleton
 
@@ -32,7 +25,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 
 ## Getting started
 
-Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/) and [Bower](http://bower.io/).
+Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/).
 
 ```
 brunch new gh:gcollazo/brunch-with-ember-reloaded <appname>
@@ -46,13 +39,13 @@ Open [http://localhost:3333](http://localhost:3333) on your browser.
 This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#readme) generators to help you create common files quicker. To use first install scaffolt globally with `npm install -g scaffolt`. Then you can use the following command to generate files.
 
 ```
-scaffolt model <name>             →    app/models/Name.coffee
-scaffolt view <name>              →    app/views/NameView.coffee
-scaffolt controller <name>        →    app/controllers/NameController.coffee
-scaffolt arraycontroller <name>   →    app/controllers/NamesController.coffee
-scaffolt route <name>             →    app/routes/NameRoute.coffee
+scaffolt model <name>             →    app/models/Name.js
+scaffolt view <name>              →    app/views/NameView.js
+scaffolt controller <name>        →    app/controllers/NameController.js
+scaffolt arraycontroller <name>   →    app/controllers/NamesController.js
+scaffolt route <name>             →    app/routes/NameRoute.js
 scaffolt template <name>          →    app/templatesname.hbs
-scaffolt component <name>         →    app/components/NameComponent.coffee
+scaffolt component <name>         →    app/components/NameComponent.js
                                        app/templates/components/name.hbs
 ```
 
