@@ -7,7 +7,7 @@
 
 
 
- // Version: 1.0.0-beta.4+canary.e7996c4d
+ // Version: 1.0.0-beta.4+canary.7af6fcb0
 
 (function() {
 var define, requireModule;
@@ -62,7 +62,7 @@ var define, requireModule;
 var DS;
 if ('undefined' === typeof DS) {
   DS = Ember.Namespace.create({
-    VERSION: '1.0.0-beta.4+canary.e7996c4d'
+    VERSION: '1.0.0-beta.4+canary.7af6fcb0'
   });
 
   if ('undefined' !== typeof window) {
@@ -7841,26 +7841,9 @@ DS.ActiveModelSerializer = DS.RESTSerializer.extend({
   },
 
   /**
-    Serialize has-may relationship when it is configured as embedded objects.
-
-    @method serializeHasMany
+    Does not serialize hasMany relationships by default.
   */
-  serializeHasMany: function(record, json, relationship) {
-    var key   = relationship.key,
-        attrs = get(this, 'attrs'),
-        embed = attrs && attrs[key] && attrs[key].embedded === 'always';
-
-    if (embed) {
-      json[this.keyForAttribute(key)] = get(record, key).map(function(relation) {
-        var data = relation.serialize(),
-            primaryKey = get(this, 'primaryKey');
-
-        data[primaryKey] = get(relation, primaryKey);
-
-        return data;
-      }, this);
-    }
-  },
+  serializeHasMany: Ember.K,
 
   /**
     Underscores the JSON root keys when serializing.
@@ -7955,8 +7938,65 @@ DS.ActiveModelSerializer = DS.RESTSerializer.extend({
         }
       }, this);
     }
+  }
+});
+})();
+
+
+
+(function() {
+var get = Ember.get;
+var forEach = Ember.EnumerableUtils.forEach;
+
+/**
+  The EmbeddedRecordsMixin allows you to add embedded record support to your
+  serializers.
+  To set up embedded records, you include the mixin into the serializer and then
+  define your embedded relations.
+
+  ```js
+  App.PostSerializer = DS.ActiveModelSerializer.extend(DS.EmbeddedRecordsMixin, {
+    attrs: {
+      comments: {embedded: 'always'}
+    }
+  })
+  ```
+
+  Currently only `{embedded: 'always'}` records are supported.
+
+  @class EmbeddedRecordsMixin
+  @namespace DS
+*/
+DS.EmbeddedRecordsMixin = Ember.Mixin.create({
+
+  /**
+    Serialize has-may relationship when it is configured as embedded objects.
+
+    @method serializeHasMany
+  */
+  serializeHasMany: function(record, json, relationship) {
+    var key   = relationship.key,
+        attrs = get(this, 'attrs'),
+        embed = attrs && attrs[key] && attrs[key].embedded === 'always';
+
+    if (embed) {
+      json[this.keyForAttribute(key)] = get(record, key).map(function(relation) {
+        var data = relation.serialize(),
+            primaryKey = get(this, 'primaryKey');
+
+        data[primaryKey] = get(relation, primaryKey);
+
+        return data;
+      }, this);
+    }
   },
 
+  /**
+    Extract embedded objects out of the payload for a single object
+    and add them as sideloaded objects instead.
+
+    @method extractSingle
+  */
   extractSingle: function(store, primaryType, payload, recordId, requestType) {
     var root = this.keyForAttribute(primaryType.typeKey),
         partial = payload[root];
@@ -7966,6 +8006,12 @@ DS.ActiveModelSerializer = DS.RESTSerializer.extend({
     return this._super(store, primaryType, payload, recordId, requestType);
   },
 
+  /**
+    Extract embedded objects out of a standard payload
+    and add them as sideloaded objects instead.
+
+    @method extractArray
+  */
   extractArray: function(store, type, payload) {
     var root = this.keyForAttribute(type.typeKey),
         partials = payload[Ember.String.pluralize(root)];
@@ -8021,7 +8067,6 @@ function updatePayloadWithEmbedded(store, serializer, type, partial, payload) {
     }
   }, serializer);
 }
-
 })();
 
 
@@ -8040,9 +8085,9 @@ var forEach = Ember.EnumerableUtils.forEach;
   [active_model_serializers](http://github.com/rails-api/active_model_serializers)
   Ruby gem.
 
-  This adapter extends the DS.RESTAdapter by making consistent use of the camelization, 
-  decamelization and pluralization methods to normalize the serialized JSON into a 
-  format that is compatible with a conventional Rails backend and Ember Data. 
+  This adapter extends the DS.RESTAdapter by making consistent use of the camelization,
+  decamelization and pluralization methods to normalize the serialized JSON into a
+  format that is compatible with a conventional Rails backend and Ember Data.
 
   ## JSON Structure
 
@@ -8085,7 +8130,7 @@ var forEach = Ember.EnumerableUtils.forEach;
 DS.ActiveModelAdapter = DS.RESTAdapter.extend({
   defaultSerializer: '_ams',
   /**
-    The ActiveModelAdapter overrides the `pathForType` method to build 
+    The ActiveModelAdapter overrides the `pathForType` method to build
     underscored URLs by decamelizing and pluralizing the object type name.
 
     ```js
@@ -8106,13 +8151,13 @@ DS.ActiveModelAdapter = DS.RESTAdapter.extend({
     The ActiveModelAdapter overrides the `ajaxError` method
     to return a DS.InvalidError for all 422 Unprocessable Entity
     responses.
-    
+
     A 422 HTTP response from the server generally implies that the request
-    was well formed but the API was unable to process it because the 
+    was well formed but the API was unable to process it because the
     content was not semantically correct or meaningful per the API.
-    
+
     For more information on 422 HTTP Error code see 11.2 WebDAV RFC 4918
-    https://tools.ietf.org/html/rfc4918#section-11.2 
+    https://tools.ietf.org/html/rfc4918#section-11.2
 
     @method ajaxError
     @param jqXHR

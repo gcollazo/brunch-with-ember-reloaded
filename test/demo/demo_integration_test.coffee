@@ -1,12 +1,4 @@
-test 'welcome message present', ->
-    App.reset()
-
-    visit('/').then ->
-        ok find('h2:contains("Welcome to Ember")').length
-
-test 'list items present', ->
-    App.reset()
-
-    visit('/').then ->
-        listItems = find('li').length
-        equal 3, listItems, "found instead #{listItems}"
+test "/", ->
+  visit("/").then ->
+    equal(find("h2").text(), "Welcome to Ember.js", "Application header is rendered")
+    equal(find("li").length, 3, "There are three items in the list")

@@ -11,21 +11,21 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember v1.2.0](http://emberjs.com)
-- [Ember Data 1.0.0-beta.4+canary.e7996c4d](https://github.com/emberjs/data)
+- [Ember 1.2.1+pre.ce3a6b7c](http://emberjs.com)
+- [Ember Data 1.0.0-beta.4+canary.7af6fcb0](https://github.com/emberjs/data)
 - [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
-- [HTML5 Boilerplate v4.2.0](http://html5boilerplate.com)
+- [HTML5 Boilerplate v4.3.0](http://html5boilerplate.com)
 
-## Features
+## Other versions of this skeleton
 
-- **Ember Data install script** - A data persistence library for Ember.js.
-- **CoffeeScript** - a little language that compiles into JavaScript.
-- **Stylus** - Expressive, dynamic, robust CSS pre-processor.
-- **auto-reload-brunch** - Adds automatic browser reloading support to brunch.
-- **uglify-js-brunch** - Adds UglifyJS support to brunch.
+- [ES6](https://github.com/gcollazo/brunch-with-ember-reloaded/tree/es6): Experimental version using ES6 module syntax.
+- [CoffeeScript](https://github.com/gcollazo/brunch-with-ember-reloaded/tree/coffeescript)
+
 
 ## Getting started
+
+Before using brunch-with-ember-reloaded you will need to install [Brunch](http://brunch.io/).
 
 ```
 git clone https://github.com/gcollazo/brunch-with-ember-reloaded.git -b coffeescript
@@ -43,7 +43,7 @@ This skeleton makes use of [scaffolt](https://github.com/paulmillr/scaffolt#read
 scaffolt model <name>             →    app/models/Name.coffee
 scaffolt view <name>              →    app/views/NameView.coffee
 scaffolt controller <name>        →    app/controllers/NameController.coffee
-scaffolt arraycontroller <name>	  →    app/controllers/NamesController.coffee
+scaffolt arraycontroller <name>   →    app/controllers/NamesController.coffee
 scaffolt route <name>             →    app/routes/NameRoute.coffee
 scaffolt template <name>          →    app/templatesname.hbs
 scaffolt component <name>         →    app/components/NameComponent.coffee
