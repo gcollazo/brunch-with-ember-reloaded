@@ -12,7 +12,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 
 ## Versions
 - [Ember 1.2.1+pre.ce3a6b7c](http://emberjs.com)
-- [Ember Data 1.0.0-beta.4+canary.7af6fcb0](https://github.com/emberjs/data)
+- [Ember Data 1.0.0-beta.4+canary.0e124357](https://github.com/emberjs/data)
 - [Handlebars 1.1.2](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
 - [HTML5 Boilerplate v4.3.0](http://html5boilerplate.com)
