@@ -1,5 +1,3 @@
-var sysPath = require('path');
-
 exports.config = {
   files: {
     javascripts: {
@@ -8,7 +6,12 @@ exports.config = {
         'javascripts/vendor.js': /^vendor/
       },
       order: {
-        before: ['vendor/scripts/console-polyfill.js', 'vendor/scripts/jquery.js', 'vendor/scripts/handlebars.js', 'vendor/scripts/ember.js', 'vendor/scripts/ember-data.js']
+        before: [
+          'vendor/scripts/console-polyfill.js',
+          'vendor/scripts/jquery.js',
+          'vendor/scripts/handlebars.js',
+          'vendor/scripts/ember.js', 'vendor/scripts/ember-data.js'
+        ]
       }
     },
     stylesheets: {
