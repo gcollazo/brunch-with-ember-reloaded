@@ -26,5 +26,16 @@ exports.config = {
         'javascripts/app.js': /^app/
       }
     }
+  },
+  overrides: {
+    production: {
+      optimize: true,
+      sourceMaps: false,
+      plugins: {
+        autoReload: {
+          enabled: false
+        }
+      }
+    }
   }
 };
