@@ -18,9 +18,12 @@ var exec = require('child_process').exec,
         'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js'
       ]
     },
-    skeletonUrls = {
-
-    };
+    skeletonUrls = [
+      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/package.json',
+      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/README.md',
+      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/config.js',
+      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/karma.conf.js'
+    ];
 
 var getBinaryPath = function(binary) {
   var path;
@@ -55,6 +58,10 @@ switch (mode) {
     break;
 
   case 'updateskeleton':
-    console.log('updateskeleton');
+    for (var url in skeletonUrls) {
+      console.log(skeletonUrls[url]);
+      var filename = skeletonUrls[url].split('/').reverse()[0];
+      execute('curl ' + skeletonUrls[url], '> ' + filename);
+    }
     break;
 }

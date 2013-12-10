@@ -69,6 +69,13 @@ brunch watch -s
 karma start
 ```
 
+## Building for production
+This skeleton supports the production versions of ember and ember-data. Just build using the --production flags.
+
+```
+brunch build --production
+```
+
 ## Updating Ember
 
 To updated ember.js, ember-data.js and handlebars.js to the latest stable versions, just run this command on the project root.
