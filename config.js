@@ -3,14 +3,15 @@ exports.config = {
     javascripts: {
       joinTo: {
         'javascripts/app.js': /^app/,
-        'javascripts/vendor.js': /^vendor/
+        'javascripts/vendor.js': /^vendor\/scripts\/(common|development)/
       },
       order: {
         before: [
           'vendor/scripts/console-polyfill.js',
           'vendor/scripts/jquery.js',
           'vendor/scripts/handlebars.js',
-          'vendor/scripts/ember.js', 'vendor/scripts/ember-data.js'
+          'vendor/scripts/ember.js',
+          'vendor/scripts/ember-data.js'
         ]
       }
     },
@@ -32,6 +33,14 @@ exports.config = {
   },
   overrides: {
     production: {
+      files: {
+        javascripts: {
+          joinTo: {
+            'javascripts/app.js': /^app/,
+            'javascripts/vendor.js': /^vendor\/scripts\/(common|production)/
+          },
+        }
+      },
       optimize: true,
       sourceMaps: false,
       plugins: {

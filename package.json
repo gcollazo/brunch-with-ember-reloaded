@@ -13,7 +13,7 @@
   },
   "scripts": {
     "start": "brunch watch --server",
-    "emberupdate": "curl http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-latest.js > vendor/scripts/handlebars.js && curl http://builds.emberjs.com/release/ember.js > vendor/scripts/ember.js && curl http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.js > vendor/scripts/ember-data.js"
+    "emberupdate": "node setup.js emberupdate"
   },
   "dependencies": {
     "javascript-brunch": "~1.7.0",
