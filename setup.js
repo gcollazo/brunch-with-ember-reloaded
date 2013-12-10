@@ -59,7 +59,7 @@ switch (mode) {
       execute('unzip', 'master.zip', function() {
         execute('cat brunch-with-ember-reloaded-master/config.js', '> config.js');
         execute('cat brunch-with-ember-reloaded-master/karma.conf.js', '> karma.conf.js');
-        execute('cat brunch-with-ember-reloaded-master/package.json', '> packages.json');
+        execute('cat brunch-with-ember-reloaded-master/package.json', '> package.json');
         execute('cat brunch-with-ember-reloaded-master/README.md', '> README.md');
         execute('cat brunch-with-ember-reloaded-master/setup.js', '> setup.js');
         execute('rm', '-rf generators', function() {
