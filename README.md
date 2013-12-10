@@ -81,7 +81,15 @@ brunch build --production
 To updated ember.js, ember-data.js and handlebars.js to the latest stable versions, just run this command on the project root.
 
 ```
-npm run emberupdate
+npm run update:ember
+```
+
+## Updating Skeleton
+
+This command will replace `package.json`, `README.md`, `config.js` and `karma.conf.js` with the latest version from the GitHub repository.
+
+```
+npm run update:skeleton
 ```
 
 ## License
