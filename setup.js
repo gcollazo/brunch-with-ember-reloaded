@@ -17,11 +17,15 @@ var exec = require('child_process').exec,
         'http://builds.emberjs.com/release/ember.prod.js',
         'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js'
       ]
+    },
+    skeletonUrls = {
+
     };
 
 var getBinaryPath = function(binary) {
   var path;
-  if (fsExistsSync(path = sysPath.join('node_modules', '.bin', binary))) return path;
+  if (fsExistsSync(
+      path = sysPath.join('node_modules', '.bin', binary))) return path;
   if (fsExistsSync(path = sysPath.join('..', '.bin', binary))) return path;
   return binary;
 };
@@ -41,9 +45,11 @@ switch (mode) {
     for (var env in emberUrls) {
       for (var file in emberUrls[env]) {
         var download = emberUrls[env][file],
-            filename = download.split('/').reverse()[0].replace('.prod', '').replace('-latest', '');
+            filename = download.split('/').reverse()[0]
+                       .replace('.prod', '').replace('-latest', '');
 
-        execute('curl ' + emberUrls[env][file], ' > vendor/scripts/' + env + '/' + filename);
+        execute('curl ' + emberUrls[env][file],
+                ' > vendor/scripts/' + env + '/' + filename);
       }
     }
     break;
