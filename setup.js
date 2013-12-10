@@ -52,7 +52,7 @@ switch (mode) {
     }
     break;
 
-  case 'updateskeleton':
+  case 'skeletonupdate':
     // for (var url in skeletonUrls) {
     //   console.log(skeletonUrls[url]);
     //   var filename = skeletonUrls[url].split('/').reverse()[0];
