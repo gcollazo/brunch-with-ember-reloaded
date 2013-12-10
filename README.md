@@ -86,10 +86,16 @@ npm run update:ember
 
 ## Updating Skeleton
 
-This command will replace `package.json`, `README.md`, `config.js` and `karma.conf.js` with the latest version from the GitHub repository.
+This command will replace `package.json`, `README.md`, `config.js`, `karma.conf.js` and the `generators` directory with the latest version from the GitHub repository.
 
 ```
 npm run update:skeleton
+```
+If you want to update an older version of the skeleton which doesn't have support for the update:skeleton command you can get the `setup.js` by running:
+
+```
+curl https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/setup.js > setup.js
+node setup.js update:skeleton
 ```
 
 ## License
