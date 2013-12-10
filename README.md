@@ -90,6 +90,7 @@ This command will replace `package.json`, `README.md`, `config.js`, `karma.conf.
 
 ```
 npm run update:skeleton
+npm install
 ```
 If you want to update an older version of the skeleton which doesn't have support for the update:skeleton command you can get the `setup.js` by running:
 
