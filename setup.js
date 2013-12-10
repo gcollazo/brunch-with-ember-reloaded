@@ -53,12 +53,6 @@ switch (mode) {
     break;
 
   case 'skeletonupdate':
-    // for (var url in skeletonUrls) {
-    //   console.log(skeletonUrls[url]);
-    //   var filename = skeletonUrls[url].split('/').reverse()[0];
-    //   execute('curl ' + skeletonUrls[url], '> ' + filename);
-    // }
-
     var downloadUrl = 'https://codeload.github.com/gcollazo/brunch-with-ember-reloaded/zip/master';
 
     execute('curl ' + downloadUrl, '> master.zip', function() {
