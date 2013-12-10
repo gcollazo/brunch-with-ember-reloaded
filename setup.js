@@ -57,11 +57,11 @@ switch (mode) {
 
     execute('curl ' + downloadUrl, '> master.zip', function() {
       execute('unzip', 'master.zip', function() {
-        execute('mv brunch-with-ember-reloaded-master/config.js', '.');
-        execute('mv brunch-with-ember-reloaded-master/karma.conf.js', '.');
-        execute('mv brunch-with-ember-reloaded-master/package.json', '.');
-        execute('mv brunch-with-ember-reloaded-master/README.md', '.');
-        execute('mv brunch-with-ember-reloaded-master/setup.js', '.');
+        execute('cat brunch-with-ember-reloaded-master/config.js', '> config.js');
+        execute('cat brunch-with-ember-reloaded-master/karma.conf.js', '> karma.conf.js');
+        execute('cat brunch-with-ember-reloaded-master/package.json', '> packages.json');
+        execute('cat brunch-with-ember-reloaded-master/README.md', '> README.md');
+        execute('cat brunch-with-ember-reloaded-master/setup.js', '> setup.js');
         execute('rm', '-rf generators', function() {
           execute('mv brunch-with-ember-reloaded-master/generators/', 'generators/', function() {
             execute('rm', '-rf brunch-with-ember-reloaded-master');
