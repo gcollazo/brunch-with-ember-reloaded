@@ -7,11 +7,11 @@ exports.config = {
       },
       order: {
         before: [
-          'vendor/scripts/console-polyfill.js',
-          'vendor/scripts/jquery.js',
-          'vendor/scripts/handlebars.js',
-          'vendor/scripts/ember.js',
-          'vendor/scripts/ember-data.js'
+          'vendor/scripts/common/console-polyfill.js',
+          'vendor/scripts/common/jquery.js',
+          'vendor/scripts/common/handlebars.js',
+          'vendor/scripts/development/ember.js',
+          'vendor/scripts/development/ember-data.js'
         ]
       }
     },
@@ -32,6 +32,8 @@ exports.config = {
     }
   },
   overrides: {
+
+    // Production Settings
     production: {
       files: {
         javascripts: {
@@ -39,6 +41,15 @@ exports.config = {
             'javascripts/app.js': /^app/,
             'javascripts/vendor.js': /^vendor\/scripts\/(common|production)/
           },
+          order: {
+            before: [
+              'vendor/scripts/common/console-polyfill.js',
+              'vendor/scripts/common/jquery.js',
+              'vendor/scripts/common/handlebars.js',
+              'vendor/scripts/production/ember.js',
+              'vendor/scripts/production/ember-data.js'
+            ]
+          }
         }
       },
       optimize: true,
