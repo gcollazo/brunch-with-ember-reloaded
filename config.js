@@ -1,8 +1,11 @@
 exports.config = {
+  paths: {
+    watched: ['app', 'envs', 'vendor', 'test']
+  },
   files: {
     javascripts: {
       joinTo: {
-        'javascripts/app.js': /^app/,
+        'javascripts/app.js': /^(app|envs\/development)/,
         'javascripts/vendor.js': /^vendor\/scripts\/(common|development)/
       },
       order: {
@@ -38,7 +41,7 @@ exports.config = {
       files: {
         javascripts: {
           joinTo: {
-            'javascripts/app.js': /^app/,
+            'javascripts/app.js': /^(app|envs\/production)/,
             'javascripts/vendor.js': /^vendor\/scripts\/(common|production)/
           },
           order: {
