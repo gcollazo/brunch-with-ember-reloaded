@@ -13,8 +13,8 @@
   },
   "scripts": {
     "start": "brunch watch --server",
-    "update:ember": "node setup.js emberupdate",
-    "update:skeleton": "node setup.js skeletonupdate"
+    "update:ember": "node setup.js update:ember",
+    "update:skeleton": "node setup.js update:skeleton"
   },
   "dependencies": {
     "javascript-brunch": "~1.7.0",

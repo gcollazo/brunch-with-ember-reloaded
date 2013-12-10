@@ -39,7 +39,7 @@ var execute = function(path, params, callback) {
 };
 
 switch (mode) {
-  case 'emberupdate':
+  case 'update:ember':
     for (var env in emberUrls) {
       for (var file in emberUrls[env]) {
         var download = emberUrls[env][file],
@@ -52,7 +52,7 @@ switch (mode) {
     }
     break;
 
-  case 'skeletonupdate':
+  case 'update:skeleton':
     var downloadUrl = 'https://codeload.github.com/gcollazo/brunch-with-ember-reloaded/zip/master';
 
     execute('curl ' + downloadUrl, '> master.zip', function() {
