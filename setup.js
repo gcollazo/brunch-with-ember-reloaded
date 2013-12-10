@@ -17,13 +17,7 @@ var exec = require('child_process').exec,
         'http://builds.emberjs.com/release/ember.prod.js',
         'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js'
       ]
-    },
-    skeletonUrls = [
-      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/package.json',
-      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/README.md',
-      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/config.js',
-      'https://raw.github.com/gcollazo/brunch-with-ember-reloaded/master/karma.conf.js'
-    ];
+    };
 
 var getBinaryPath = function(binary) {
   var path;
@@ -40,6 +34,7 @@ var execute = function(path, params, callback) {
   exec(command, function(error, stdout, stderr) {
     if (error != null) return process.stderr.write(stderr.toString());
     console.log(stdout.toString());
+    callback();
   });
 };
 
@@ -58,10 +53,28 @@ switch (mode) {
     break;
 
   case 'updateskeleton':
-    for (var url in skeletonUrls) {
-      console.log(skeletonUrls[url]);
-      var filename = skeletonUrls[url].split('/').reverse()[0];
-      execute('curl ' + skeletonUrls[url], '> ' + filename);
-    }
+    // for (var url in skeletonUrls) {
+    //   console.log(skeletonUrls[url]);
+    //   var filename = skeletonUrls[url].split('/').reverse()[0];
+    //   execute('curl ' + skeletonUrls[url], '> ' + filename);
+    // }
+
+    var downloadUrl = 'https://codeload.github.com/gcollazo/brunch-with-ember-reloaded/zip/master';
+
+    execute('curl ' + downloadUrl, '> master.zip', function() {
+      execute('unzip', 'master.zip', function() {
+        execute('mv brunch-with-ember-reloaded/config.js', '> .');
+        execute('mv brunch-with-ember-reloaded/karma.conf.js', '> .');
+        execute('mv brunch-with-ember-reloaded/package.json', '> .');
+        execute('mv brunch-with-ember-reloaded/README.md', '> .');
+        execute('mv brunch-with-ember-reloaded/setup.js', '> .');
+        execute('rm', '-rf generators', function() {
+          execute('mv brunch-with-ember-reloaded-master/generators/', 'generators/', function() {
+            execute('rm', '-rf brunch-with-ember-reloaded-master');
+            execute('rm', '-r master.zip');
+          });
+        });
+      });
+    });
     break;
 }
