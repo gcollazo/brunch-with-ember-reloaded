@@ -23,7 +23,7 @@
     "uglify-js-brunch": "~1.7.0",
     "clean-css-brunch": "~1.7.0",
     "auto-reload-brunch": "~1.7.0",
-    "ember-handlebars-brunch": "~1.0.0"
+    "ember-handlebars-brunch": "git://github.com/gcollazo/ember-handlebars-brunch.git#master"
   },
   "devDependencies": {
     "karma": "*",

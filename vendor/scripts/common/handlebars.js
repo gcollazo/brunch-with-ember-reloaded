@@ -1,6 +1,6 @@
 /*!
 
- handlebars v1.1.2
+ handlebars v1.3.0
 
 Copyright (C) 2011 by Yehuda Katz
 
@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 @license
 */
+/* exported Handlebars */
 var Handlebars = (function() {
 // handlebars/safe-string.js
 var __module4__ = (function() {
@@ -65,12 +66,16 @@ var __module3__ = (function(__dependency1__) {
     return escape[chr] || "&amp;";
   }
 
-  function extend(obj, value) {
-    for(var key in value) {
-      if(Object.prototype.hasOwnProperty.call(value, key)) {
-        obj[key] = value[key];
+  function extend(obj /* , ...source */) {
+    for (var i = 1; i < arguments.length; i++) {
+      for (var key in arguments[i]) {
+        if (Object.prototype.hasOwnProperty.call(arguments[i], key)) {
+          obj[key] = arguments[i][key];
+        }
       }
     }
+
+    return obj;
   }
 
   __exports__.extend = extend;var toString = Object.prototype.toString;
@@ -120,7 +125,11 @@ var __module3__ = (function(__dependency1__) {
     }
   }
 
-  __exports__.isEmpty = isEmpty;
+  __exports__.isEmpty = isEmpty;function appendContextPath(contextPath, id) {
+    return (contextPath ? contextPath + '.' : '') + id;
+  }
+
+  __exports__.appendContextPath = appendContextPath;
   return __exports__;
 })(__module4__);
 
@@ -131,12 +140,24 @@ var __module5__ = (function() {
 
   var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
 
-  function Exception(/* message */) {
-    var tmp = Error.prototype.constructor.apply(this, arguments);
+  function Exception(message, node) {
+    var line;
+    if (node && node.firstLine) {
+      line = node.firstLine;
+
+      message += ' - ' + line + ':' + node.firstColumn;
+    }
+
+    var tmp = Error.prototype.constructor.call(this, message);
 
     // Unfortunately errors are not enumerable in Chrome (at least), so `for prop in tmp` doesn't work.
     for (var idx = 0; idx < errorProps.length; idx++) {
       this[errorProps[idx]] = tmp[errorProps[idx]];
+    }
+
+    if (line) {
+      this.lineNumber = line;
+      this.column = node.firstColumn;
     }
   }
 
@@ -153,7 +174,7 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
   var Utils = __dependency1__;
   var Exception = __dependency2__;
 
-  var VERSION = "1.1.2";
+  var VERSION = "1.3.0";
   __exports__.VERSION = VERSION;var COMPILER_REVISION = 4;
   __exports__.COMPILER_REVISION = COMPILER_REVISION;
   var REVISION_CHANGES = {
@@ -190,6 +211,9 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
         this.helpers[name] = fn;
       }
     },
+    unregisterHelper: function(name) {
+      delete this.helpers[name];
+    },
 
     registerPartial: function(name, str) {
       if (toString.call(name) === objectType) {
@@ -197,15 +221,20 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
       } else {
         this.partials[name] = str;
       }
+    },
+    unregisterPartial: function(name) {
+      delete this.partials[name];
     }
   };
 
   function registerDefaultHelpers(instance) {
-    instance.registerHelper('helperMissing', function(arg) {
-      if(arguments.length === 2) {
+    instance.registerHelper('helperMissing', function(/* [args, ]options */) {
+      if(arguments.length === 1) {
+        // A missing field in a {{foo}} constuct.
         return undefined;
       } else {
-        throw new Error("Missing helper: '" + arg + "'");
+        // Someone is actually trying to call something, blow up.
+        throw new Exception("Missing helper: '" + arguments[arguments.length-1].name + "'");
       }
     });
 
@@ -220,18 +249,39 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
         return inverse(this);
       } else if (isArray(context)) {
         if(context.length > 0) {
+          if (options.ids) {
+            options.ids = [options.name];
+          }
+
           return instance.helpers.each(context, options);
         } else {
           return inverse(this);
         }
       } else {
-        return fn(context);
+        if (options.data && options.ids) {
+          var data = createFrame(options.data);
+          data.contextPath = Utils.appendContextPath(options.data.contextPath, options.name);
+          options = {data: data};
+        }
+
+        return fn(context, options);
       }
     });
 
     instance.registerHelper('each', function(context, options) {
+      // Allow for {{#each}}
+      if (!options) {
+        options = context;
+        context = this;
+      }
+
       var fn = options.fn, inverse = options.inverse;
       var i = 0, ret = "", data;
+
+      var contextPath;
+      if (options.data && options.ids) {
+        contextPath = Utils.appendContextPath(options.data.contextPath, options.ids[0]) + '.';
+      }
 
       if (isFunction(context)) { context = context.call(this); }
 
@@ -246,13 +296,25 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
               data.index = i;
               data.first = (i === 0);
               data.last  = (i === (context.length-1));
+
+              if (contextPath) {
+                data.contextPath = contextPath + i;
+              }
             }
             ret = ret + fn(context[i], { data: data });
           }
         } else {
           for(var key in context) {
             if(context.hasOwnProperty(key)) {
-              if(data) { data.key = key; }
+              if(data) {
+                data.key = key;
+                data.index = i;
+                data.first = (i === 0);
+
+                if (contextPath) {
+                  data.contextPath = contextPath + key;
+                }
+              }
               ret = ret + fn(context[key], {data: data});
               i++;
             }
@@ -287,7 +349,17 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
     instance.registerHelper('with', function(context, options) {
       if (isFunction(context)) { context = context.call(this); }
 
-      if (!Utils.isEmpty(context)) return options.fn(context);
+      var fn = options.fn;
+
+      if (!Utils.isEmpty(context)) {
+        if (options.data && options.ids) {
+          var data = createFrame(options.data);
+          data.contextPath = Utils.appendContextPath(options.data.contextPath, options.ids[0]);
+          options = {data:data};
+        }
+
+        return fn(context, options);
+      }
     });
 
     instance.registerHelper('log', function(context, options) {
@@ -320,9 +392,7 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
   function log(level, obj) { logger.log(level, obj); }
 
   __exports__.log = log;var createFrame = function(object) {
-    var obj = {};
-    Utils.extend(obj, object);
-    return obj;
+    return Utils.extend({}, object);
   };
   __exports__.createFrame = createFrame;
   return __exports__;
@@ -336,6 +406,7 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
   var Exception = __dependency2__;
   var COMPILER_REVISION = __dependency3__.COMPILER_REVISION;
   var REVISION_CHANGES = __dependency3__.REVISION_CHANGES;
+  var createFrame = __dependency3__.createFrame;
 
   function checkRevision(compilerInfo) {
     var compilerRevision = compilerInfo && compilerInfo[0] || 1,
@@ -345,42 +416,41 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
       if (compilerRevision < currentRevision) {
         var runtimeVersions = REVISION_CHANGES[currentRevision],
             compilerVersions = REVISION_CHANGES[compilerRevision];
-        throw new Error("Template was precompiled with an older version of Handlebars than the current runtime. "+
+        throw new Exception("Template was precompiled with an older version of Handlebars than the current runtime. "+
               "Please update your precompiler to a newer version ("+runtimeVersions+") or downgrade your runtime to an older version ("+compilerVersions+").");
       } else {
         // Use the embedded version info since the runtime doesn't know about this revision yet
-        throw new Error("Template was precompiled with a newer version of Handlebars than the current runtime. "+
+        throw new Exception("Template was precompiled with a newer version of Handlebars than the current runtime. "+
               "Please update your runtime to a newer version ("+compilerInfo[1]+").");
       }
     }
   }
 
-  // TODO: Remove this line and break up compilePartial
+  __exports__.checkRevision = checkRevision;// TODO: Remove this line and break up compilePartial
 
   function template(templateSpec, env) {
     if (!env) {
-      throw new Error("No environment passed to template");
+      throw new Exception("No environment passed to template");
     }
 
-    var invokePartialWrapper;
-    if (env.compile) {
-      invokePartialWrapper = function(partial, name, context, helpers, partials, data) {
-        // TODO : Check this for all inputs and the options handling (partial flag, etc). This feels
-        // like there should be a common exec path
-        var result = invokePartial.apply(this, arguments);
-        if (result) { return result; }
+    // Note: Using env.VM references rather than local var references throughout this section to allow
+    // for external users to override these as psuedo-supported APIs.
+    var invokePartialWrapper = function(partial, name, context, hash, helpers, partials, data) {
+      if (hash) {
+        context = Utils.extend({}, context, hash);
+      }
 
+      var result = env.VM.invokePartial.call(this, partial, name, context, helpers, partials, data);
+      if (result != null) { return result; }
+
+      if (env.compile) {
         var options = { helpers: helpers, partials: partials, data: data };
         partials[name] = env.compile(partial, { data: data !== undefined }, env);
         return partials[name](context, options);
-      };
-    } else {
-      invokePartialWrapper = function(partial, name /* , context, helpers, partials, data */) {
-        var result = invokePartial.apply(this, arguments);
-        if (result) { return result; }
+      } else {
         throw new Exception("The partial " + name + " could not be compiled when running in runtime-only mode");
-      };
-    }
+      }
+    };
 
     // Just add water
     var container = {
@@ -396,18 +466,24 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
         }
         return programWrapper;
       },
+      initData: function(context, data) {
+        if (!data || !('root' in data)) {
+          data = data ? createFrame(data) : {};
+          data.root = context;
+        }
+        return data;
+      },
       merge: function(param, common) {
         var ret = param || common;
 
         if (param && common && (param !== common)) {
-          ret = {};
-          Utils.extend(ret, common);
-          Utils.extend(ret, param);
+          ret = Utils.extend({}, common, param);
         }
+
         return ret;
       },
-      programWithDepth: programWithDepth,
-      noop: noop,
+      programWithDepth: env.VM.programWithDepth,
+      noop: env.VM.noop,
       compilerInfo: null
     };
 
@@ -429,7 +505,7 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
             options.data);
 
       if (!options.partial) {
-        checkRevision(container.compilerInfo);
+        env.VM.checkRevision(container.compilerInfo);
       }
 
       return result;
@@ -520,58 +596,120 @@ var __module7__ = (function(__dependency1__) {
   var __exports__;
   var Exception = __dependency1__;
 
+  function LocationInfo(locInfo){
+    locInfo = locInfo || {};
+    this.firstLine   = locInfo.first_line;
+    this.firstColumn = locInfo.first_column;
+    this.lastColumn  = locInfo.last_column;
+    this.lastLine    = locInfo.last_line;
+  }
+
   var AST = {
-    ProgramNode: function(statements, inverseStrip, inverse) {
+    ProgramNode: function(statements, inverseStrip, inverse, locInfo) {
+      var inverseLocationInfo, firstInverseNode;
+      if (arguments.length === 3) {
+        locInfo = inverse;
+        inverse = null;
+      } else if (arguments.length === 2) {
+        locInfo = inverseStrip;
+        inverseStrip = null;
+      }
+
+      LocationInfo.call(this, locInfo);
       this.type = "program";
       this.statements = statements;
       this.strip = {};
 
       if(inverse) {
-        this.inverse = new AST.ProgramNode(inverse, inverseStrip);
+        firstInverseNode = inverse[0];
+        if (firstInverseNode) {
+          inverseLocationInfo = {
+            first_line: firstInverseNode.firstLine,
+            last_line: firstInverseNode.lastLine,
+            last_column: firstInverseNode.lastColumn,
+            first_column: firstInverseNode.firstColumn
+          };
+          this.inverse = new AST.ProgramNode(inverse, inverseStrip, inverseLocationInfo);
+        } else {
+          this.inverse = new AST.ProgramNode(inverse, inverseStrip);
+        }
         this.strip.right = inverseStrip.left;
       } else if (inverseStrip) {
         this.strip.left = inverseStrip.right;
       }
     },
 
-    MustacheNode: function(rawParams, hash, open, strip) {
+    MustacheNode: function(rawParams, hash, open, strip, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "mustache";
-      this.hash = hash;
       this.strip = strip;
 
-      var escapeFlag = open[3] || open[2];
-      this.escaped = escapeFlag !== '{' && escapeFlag !== '&';
+      // Open may be a string parsed from the parser or a passed boolean flag
+      if (open != null && open.charAt) {
+        // Must use charAt to support IE pre-10
+        var escapeFlag = open.charAt(3) || open.charAt(2);
+        this.escaped = escapeFlag !== '{' && escapeFlag !== '&';
+      } else {
+        this.escaped = !!open;
+      }
+
+      if (rawParams instanceof AST.SexprNode) {
+        this.sexpr = rawParams;
+      } else {
+        // Support old AST API
+        this.sexpr = new AST.SexprNode(rawParams, hash);
+      }
+
+      this.sexpr.isRoot = true;
+
+      // Support old AST API that stored this info in MustacheNode
+      this.id = this.sexpr.id;
+      this.params = this.sexpr.params;
+      this.hash = this.sexpr.hash;
+      this.eligibleHelper = this.sexpr.eligibleHelper;
+      this.isHelper = this.sexpr.isHelper;
+    },
+
+    SexprNode: function(rawParams, hash, locInfo) {
+      LocationInfo.call(this, locInfo);
+
+      this.type = "sexpr";
+      this.hash = hash;
 
       var id = this.id = rawParams[0];
       var params = this.params = rawParams.slice(1);
 
-      // a mustache is an eligible helper if:
-      // * its id is simple (a single part, not `this` or `..`)
-      var eligibleHelper = this.eligibleHelper = id.isSimple;
-
       // a mustache is definitely a helper if:
       // * it is an eligible helper, and
       // * it has at least one parameter or hash segment
-      this.isHelper = eligibleHelper && (params.length || hash);
+      this.isHelper = params.length || hash;
+
+      // a mustache is an eligible helper if:
+      // * its id is simple (a single part, not `this` or `..`)
+      this.eligibleHelper = this.isHelper || id.isSimple;
 
       // if a mustache is an eligible helper but not a definite
       // helper, it is ambiguous, and will be resolved in a later
       // pass or at runtime.
     },
 
-    PartialNode: function(partialName, context, strip) {
+    PartialNode: function(partialName, context, hash, strip, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type         = "partial";
       this.partialName  = partialName;
       this.context      = context;
+      this.hash = hash;
       this.strip = strip;
     },
 
-    BlockNode: function(mustache, program, inverse, close) {
-      if(mustache.id.original !== close.path.original) {
-        throw new Exception(mustache.id.original + " doesn't match " + close.path.original);
+    BlockNode: function(mustache, program, inverse, close, locInfo) {
+      LocationInfo.call(this, locInfo);
+
+      if(mustache.sexpr.id.original !== close.path.original) {
+        throw new Exception(mustache.sexpr.id.original + " doesn't match " + close.path.original, this);
       }
 
-      this.type = "block";
+      this.type = 'block';
       this.mustache = mustache;
       this.program  = program;
       this.inverse  = inverse;
@@ -589,39 +727,50 @@ var __module7__ = (function(__dependency1__) {
       }
     },
 
-    ContentNode: function(string) {
+    ContentNode: function(string, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "content";
       this.string = string;
     },
 
-    HashNode: function(pairs) {
+    HashNode: function(pairs, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "hash";
       this.pairs = pairs;
     },
 
-    IdNode: function(parts) {
+    IdNode: function(parts, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "ID";
 
       var original = "",
           dig = [],
-          depth = 0;
+          depth = 0,
+          depthString = '';
 
       for(var i=0,l=parts.length; i<l; i++) {
         var part = parts[i].part;
         original += (parts[i].separator || '') + part;
 
         if (part === ".." || part === "." || part === "this") {
-          if (dig.length > 0) { throw new Exception("Invalid path: " + original); }
-          else if (part === "..") { depth++; }
-          else { this.isScoped = true; }
+          if (dig.length > 0) {
+            throw new Exception("Invalid path: " + original, this);
+          } else if (part === "..") {
+            depth++;
+            depthString += '../';
+          } else {
+            this.isScoped = true;
+          }
+        } else {
+          dig.push(part);
         }
-        else { dig.push(part); }
       }
 
       this.original = original;
       this.parts    = dig;
       this.string   = dig.join('.');
       this.depth    = depth;
+      this.idName   = depthString + this.string;
 
       // an ID is simple if it only has one part, and that part is not
       // `..` or `this`.
@@ -630,37 +779,45 @@ var __module7__ = (function(__dependency1__) {
       this.stringModeValue = this.string;
     },
 
-    PartialNameNode: function(name) {
+    PartialNameNode: function(name, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "PARTIAL_NAME";
       this.name = name.original;
     },
 
-    DataNode: function(id) {
+    DataNode: function(id, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "DATA";
       this.id = id;
+      this.stringModeValue = id.stringModeValue;
+      this.idName = '@' + id.stringModeValue;
     },
 
-    StringNode: function(string) {
+    StringNode: function(string, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "STRING";
       this.original =
         this.string =
         this.stringModeValue = string;
     },
 
-    IntegerNode: function(integer) {
-      this.type = "INTEGER";
+    NumberNode: function(number, locInfo) {
+      LocationInfo.call(this, locInfo);
+      this.type = "NUMBER";
       this.original =
-        this.integer = integer;
-      this.stringModeValue = Number(integer);
+        this.number = number;
+      this.stringModeValue = Number(number);
     },
 
-    BooleanNode: function(bool) {
+    BooleanNode: function(bool, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "BOOLEAN";
       this.bool = bool;
       this.stringModeValue = bool === "true";
     },
 
-    CommentNode: function(comment) {
+    CommentNode: function(comment, locInfo) {
+      LocationInfo.call(this, locInfo);
       this.type = "comment";
       this.comment = comment;
     }
@@ -681,103 +838,107 @@ var __module9__ = (function() {
   var handlebars = (function(){
   var parser = {trace: function trace() { },
   yy: {},
-  symbols_: {"error":2,"root":3,"statements":4,"EOF":5,"program":6,"simpleInverse":7,"statement":8,"openInverse":9,"closeBlock":10,"openBlock":11,"mustache":12,"partial":13,"CONTENT":14,"COMMENT":15,"OPEN_BLOCK":16,"inMustache":17,"CLOSE":18,"OPEN_INVERSE":19,"OPEN_ENDBLOCK":20,"path":21,"OPEN":22,"OPEN_UNESCAPED":23,"CLOSE_UNESCAPED":24,"OPEN_PARTIAL":25,"partialName":26,"partial_option0":27,"inMustache_repetition0":28,"inMustache_option0":29,"dataName":30,"param":31,"STRING":32,"INTEGER":33,"BOOLEAN":34,"hash":35,"hash_repetition_plus0":36,"hashSegment":37,"ID":38,"EQUALS":39,"DATA":40,"pathSegments":41,"SEP":42,"$accept":0,"$end":1},
-  terminals_: {2:"error",5:"EOF",14:"CONTENT",15:"COMMENT",16:"OPEN_BLOCK",18:"CLOSE",19:"OPEN_INVERSE",20:"OPEN_ENDBLOCK",22:"OPEN",23:"OPEN_UNESCAPED",24:"CLOSE_UNESCAPED",25:"OPEN_PARTIAL",32:"STRING",33:"INTEGER",34:"BOOLEAN",38:"ID",39:"EQUALS",40:"DATA",42:"SEP"},
-  productions_: [0,[3,2],[3,1],[6,2],[6,3],[6,2],[6,1],[6,1],[6,0],[4,1],[4,2],[8,3],[8,3],[8,1],[8,1],[8,1],[8,1],[11,3],[9,3],[10,3],[12,3],[12,3],[13,4],[7,2],[17,3],[17,1],[31,1],[31,1],[31,1],[31,1],[31,1],[35,1],[37,3],[26,1],[26,1],[26,1],[30,2],[21,1],[41,3],[41,1],[27,0],[27,1],[28,0],[28,2],[29,0],[29,1],[36,1],[36,2]],
+  symbols_: {"error":2,"root":3,"statements":4,"EOF":5,"program":6,"simpleInverse":7,"statement":8,"openInverse":9,"closeBlock":10,"openBlock":11,"mustache":12,"partial":13,"CONTENT":14,"COMMENT":15,"OPEN_BLOCK":16,"sexpr":17,"CLOSE":18,"OPEN_INVERSE":19,"OPEN_ENDBLOCK":20,"path":21,"OPEN":22,"OPEN_UNESCAPED":23,"CLOSE_UNESCAPED":24,"OPEN_PARTIAL":25,"partialName":26,"param":27,"partial_option0":28,"partial_option1":29,"sexpr_repetition0":30,"sexpr_option0":31,"dataName":32,"STRING":33,"NUMBER":34,"BOOLEAN":35,"OPEN_SEXPR":36,"CLOSE_SEXPR":37,"hash":38,"hash_repetition_plus0":39,"hashSegment":40,"ID":41,"EQUALS":42,"DATA":43,"pathSegments":44,"SEP":45,"$accept":0,"$end":1},
+  terminals_: {2:"error",5:"EOF",14:"CONTENT",15:"COMMENT",16:"OPEN_BLOCK",18:"CLOSE",19:"OPEN_INVERSE",20:"OPEN_ENDBLOCK",22:"OPEN",23:"OPEN_UNESCAPED",24:"CLOSE_UNESCAPED",25:"OPEN_PARTIAL",33:"STRING",34:"NUMBER",35:"BOOLEAN",36:"OPEN_SEXPR",37:"CLOSE_SEXPR",41:"ID",42:"EQUALS",43:"DATA",45:"SEP"},
+  productions_: [0,[3,2],[3,1],[6,2],[6,3],[6,2],[6,1],[6,1],[6,0],[4,1],[4,2],[8,3],[8,3],[8,1],[8,1],[8,1],[8,1],[11,3],[9,3],[10,3],[12,3],[12,3],[13,5],[13,4],[7,2],[17,3],[17,1],[27,1],[27,1],[27,1],[27,1],[27,1],[27,3],[38,1],[40,3],[26,1],[26,1],[26,1],[32,2],[21,1],[44,3],[44,1],[28,0],[28,1],[29,0],[29,1],[30,0],[30,2],[31,0],[31,1],[39,1],[39,2]],
   performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
 
   var $0 = $$.length - 1;
   switch (yystate) {
-  case 1: return new yy.ProgramNode($$[$0-1]); 
+  case 1: return new yy.ProgramNode($$[$0-1], this._$); 
   break;
-  case 2: return new yy.ProgramNode([]); 
+  case 2: return new yy.ProgramNode([], this._$); 
   break;
-  case 3:this.$ = new yy.ProgramNode([], $$[$0-1], $$[$0]);
+  case 3:this.$ = new yy.ProgramNode([], $$[$0-1], $$[$0], this._$);
   break;
-  case 4:this.$ = new yy.ProgramNode($$[$0-2], $$[$0-1], $$[$0]);
+  case 4:this.$ = new yy.ProgramNode($$[$0-2], $$[$0-1], $$[$0], this._$);
   break;
-  case 5:this.$ = new yy.ProgramNode($$[$0-1], $$[$0], []);
+  case 5:this.$ = new yy.ProgramNode($$[$0-1], $$[$0], [], this._$);
   break;
-  case 6:this.$ = new yy.ProgramNode($$[$0]);
+  case 6:this.$ = new yy.ProgramNode($$[$0], this._$);
   break;
-  case 7:this.$ = new yy.ProgramNode([]);
+  case 7:this.$ = new yy.ProgramNode([], this._$);
   break;
-  case 8:this.$ = new yy.ProgramNode([]);
+  case 8:this.$ = new yy.ProgramNode([], this._$);
   break;
   case 9:this.$ = [$$[$0]];
   break;
   case 10: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
   break;
-  case 11:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1].inverse, $$[$0-1], $$[$0]);
+  case 11:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1].inverse, $$[$0-1], $$[$0], this._$);
   break;
-  case 12:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1], $$[$0-1].inverse, $$[$0]);
+  case 12:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1], $$[$0-1].inverse, $$[$0], this._$);
   break;
   case 13:this.$ = $$[$0];
   break;
   case 14:this.$ = $$[$0];
   break;
-  case 15:this.$ = new yy.ContentNode($$[$0]);
+  case 15:this.$ = new yy.ContentNode($$[$0], this._$);
   break;
-  case 16:this.$ = new yy.CommentNode($$[$0]);
+  case 16:this.$ = new yy.CommentNode($$[$0], this._$);
   break;
-  case 17:this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], $$[$0-2], stripFlags($$[$0-2], $$[$0]));
+  case 17:this.$ = new yy.MustacheNode($$[$0-1], null, $$[$0-2], stripFlags($$[$0-2], $$[$0]), this._$);
   break;
-  case 18:this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], $$[$0-2], stripFlags($$[$0-2], $$[$0]));
+  case 18:this.$ = new yy.MustacheNode($$[$0-1], null, $$[$0-2], stripFlags($$[$0-2], $$[$0]), this._$);
   break;
   case 19:this.$ = {path: $$[$0-1], strip: stripFlags($$[$0-2], $$[$0])};
   break;
-  case 20:this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], $$[$0-2], stripFlags($$[$0-2], $$[$0]));
+  case 20:this.$ = new yy.MustacheNode($$[$0-1], null, $$[$0-2], stripFlags($$[$0-2], $$[$0]), this._$);
   break;
-  case 21:this.$ = new yy.MustacheNode($$[$0-1][0], $$[$0-1][1], $$[$0-2], stripFlags($$[$0-2], $$[$0]));
+  case 21:this.$ = new yy.MustacheNode($$[$0-1], null, $$[$0-2], stripFlags($$[$0-2], $$[$0]), this._$);
   break;
-  case 22:this.$ = new yy.PartialNode($$[$0-2], $$[$0-1], stripFlags($$[$0-3], $$[$0]));
+  case 22:this.$ = new yy.PartialNode($$[$0-3], $$[$0-2], $$[$0-1], stripFlags($$[$0-4], $$[$0]), this._$);
   break;
-  case 23:this.$ = stripFlags($$[$0-1], $$[$0]);
+  case 23:this.$ = new yy.PartialNode($$[$0-2], undefined, $$[$0-1], stripFlags($$[$0-3], $$[$0]), this._$);
   break;
-  case 24:this.$ = [[$$[$0-2]].concat($$[$0-1]), $$[$0]];
+  case 24:this.$ = stripFlags($$[$0-1], $$[$0]);
   break;
-  case 25:this.$ = [[$$[$0]], null];
+  case 25:this.$ = new yy.SexprNode([$$[$0-2]].concat($$[$0-1]), $$[$0], this._$);
   break;
-  case 26:this.$ = $$[$0];
+  case 26:this.$ = new yy.SexprNode([$$[$0]], null, this._$);
   break;
-  case 27:this.$ = new yy.StringNode($$[$0]);
+  case 27:this.$ = $$[$0];
   break;
-  case 28:this.$ = new yy.IntegerNode($$[$0]);
+  case 28:this.$ = new yy.StringNode($$[$0], this._$);
   break;
-  case 29:this.$ = new yy.BooleanNode($$[$0]);
+  case 29:this.$ = new yy.NumberNode($$[$0], this._$);
   break;
-  case 30:this.$ = $$[$0];
+  case 30:this.$ = new yy.BooleanNode($$[$0], this._$);
   break;
-  case 31:this.$ = new yy.HashNode($$[$0]);
+  case 31:this.$ = $$[$0];
   break;
-  case 32:this.$ = [$$[$0-2], $$[$0]];
+  case 32:$$[$0-1].isHelper = true; this.$ = $$[$0-1];
   break;
-  case 33:this.$ = new yy.PartialNameNode($$[$0]);
+  case 33:this.$ = new yy.HashNode($$[$0], this._$);
   break;
-  case 34:this.$ = new yy.PartialNameNode(new yy.StringNode($$[$0]));
+  case 34:this.$ = [$$[$0-2], $$[$0]];
   break;
-  case 35:this.$ = new yy.PartialNameNode(new yy.IntegerNode($$[$0]));
+  case 35:this.$ = new yy.PartialNameNode($$[$0], this._$);
   break;
-  case 36:this.$ = new yy.DataNode($$[$0]);
+  case 36:this.$ = new yy.PartialNameNode(new yy.StringNode($$[$0], this._$), this._$);
   break;
-  case 37:this.$ = new yy.IdNode($$[$0]);
+  case 37:this.$ = new yy.PartialNameNode(new yy.NumberNode($$[$0], this._$));
   break;
-  case 38: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2]; 
+  case 38:this.$ = new yy.DataNode($$[$0], this._$);
   break;
-  case 39:this.$ = [{part: $$[$0]}];
+  case 39:this.$ = new yy.IdNode($$[$0], this._$);
   break;
-  case 42:this.$ = [];
+  case 40: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2]; 
   break;
-  case 43:$$[$0-1].push($$[$0]);
+  case 41:this.$ = [{part: $$[$0]}];
   break;
-  case 46:this.$ = [$$[$0]];
+  case 46:this.$ = [];
   break;
   case 47:$$[$0-1].push($$[$0]);
   break;
+  case 50:this.$ = [$$[$0]];
+  break;
+  case 51:$$[$0-1].push($$[$0]);
+  break;
   }
   },
-  table: [{3:1,4:2,5:[1,3],8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[3]},{5:[1,16],8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[2,2]},{5:[2,9],14:[2,9],15:[2,9],16:[2,9],19:[2,9],20:[2,9],22:[2,9],23:[2,9],25:[2,9]},{4:20,6:18,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{4:20,6:22,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{5:[2,13],14:[2,13],15:[2,13],16:[2,13],19:[2,13],20:[2,13],22:[2,13],23:[2,13],25:[2,13]},{5:[2,14],14:[2,14],15:[2,14],16:[2,14],19:[2,14],20:[2,14],22:[2,14],23:[2,14],25:[2,14]},{5:[2,15],14:[2,15],15:[2,15],16:[2,15],19:[2,15],20:[2,15],22:[2,15],23:[2,15],25:[2,15]},{5:[2,16],14:[2,16],15:[2,16],16:[2,16],19:[2,16],20:[2,16],22:[2,16],23:[2,16],25:[2,16]},{17:23,21:24,30:25,38:[1,28],40:[1,27],41:26},{17:29,21:24,30:25,38:[1,28],40:[1,27],41:26},{17:30,21:24,30:25,38:[1,28],40:[1,27],41:26},{17:31,21:24,30:25,38:[1,28],40:[1,27],41:26},{21:33,26:32,32:[1,34],33:[1,35],38:[1,28],41:26},{1:[2,1]},{5:[2,10],14:[2,10],15:[2,10],16:[2,10],19:[2,10],20:[2,10],22:[2,10],23:[2,10],25:[2,10]},{10:36,20:[1,37]},{4:38,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,7],22:[1,13],23:[1,14],25:[1,15]},{7:39,8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,6],22:[1,13],23:[1,14],25:[1,15]},{17:23,18:[1,40],21:24,30:25,38:[1,28],40:[1,27],41:26},{10:41,20:[1,37]},{18:[1,42]},{18:[2,42],24:[2,42],28:43,32:[2,42],33:[2,42],34:[2,42],38:[2,42],40:[2,42]},{18:[2,25],24:[2,25]},{18:[2,37],24:[2,37],32:[2,37],33:[2,37],34:[2,37],38:[2,37],40:[2,37],42:[1,44]},{21:45,38:[1,28],41:26},{18:[2,39],24:[2,39],32:[2,39],33:[2,39],34:[2,39],38:[2,39],40:[2,39],42:[2,39]},{18:[1,46]},{18:[1,47]},{24:[1,48]},{18:[2,40],21:50,27:49,38:[1,28],41:26},{18:[2,33],38:[2,33]},{18:[2,34],38:[2,34]},{18:[2,35],38:[2,35]},{5:[2,11],14:[2,11],15:[2,11],16:[2,11],19:[2,11],20:[2,11],22:[2,11],23:[2,11],25:[2,11]},{21:51,38:[1,28],41:26},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,3],22:[1,13],23:[1,14],25:[1,15]},{4:52,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,5],22:[1,13],23:[1,14],25:[1,15]},{14:[2,23],15:[2,23],16:[2,23],19:[2,23],20:[2,23],22:[2,23],23:[2,23],25:[2,23]},{5:[2,12],14:[2,12],15:[2,12],16:[2,12],19:[2,12],20:[2,12],22:[2,12],23:[2,12],25:[2,12]},{14:[2,18],15:[2,18],16:[2,18],19:[2,18],20:[2,18],22:[2,18],23:[2,18],25:[2,18]},{18:[2,44],21:56,24:[2,44],29:53,30:60,31:54,32:[1,57],33:[1,58],34:[1,59],35:55,36:61,37:62,38:[1,63],40:[1,27],41:26},{38:[1,64]},{18:[2,36],24:[2,36],32:[2,36],33:[2,36],34:[2,36],38:[2,36],40:[2,36]},{14:[2,17],15:[2,17],16:[2,17],19:[2,17],20:[2,17],22:[2,17],23:[2,17],25:[2,17]},{5:[2,20],14:[2,20],15:[2,20],16:[2,20],19:[2,20],20:[2,20],22:[2,20],23:[2,20],25:[2,20]},{5:[2,21],14:[2,21],15:[2,21],16:[2,21],19:[2,21],20:[2,21],22:[2,21],23:[2,21],25:[2,21]},{18:[1,65]},{18:[2,41]},{18:[1,66]},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,4],22:[1,13],23:[1,14],25:[1,15]},{18:[2,24],24:[2,24]},{18:[2,43],24:[2,43],32:[2,43],33:[2,43],34:[2,43],38:[2,43],40:[2,43]},{18:[2,45],24:[2,45]},{18:[2,26],24:[2,26],32:[2,26],33:[2,26],34:[2,26],38:[2,26],40:[2,26]},{18:[2,27],24:[2,27],32:[2,27],33:[2,27],34:[2,27],38:[2,27],40:[2,27]},{18:[2,28],24:[2,28],32:[2,28],33:[2,28],34:[2,28],38:[2,28],40:[2,28]},{18:[2,29],24:[2,29],32:[2,29],33:[2,29],34:[2,29],38:[2,29],40:[2,29]},{18:[2,30],24:[2,30],32:[2,30],33:[2,30],34:[2,30],38:[2,30],40:[2,30]},{18:[2,31],24:[2,31],37:67,38:[1,68]},{18:[2,46],24:[2,46],38:[2,46]},{18:[2,39],24:[2,39],32:[2,39],33:[2,39],34:[2,39],38:[2,39],39:[1,69],40:[2,39],42:[2,39]},{18:[2,38],24:[2,38],32:[2,38],33:[2,38],34:[2,38],38:[2,38],40:[2,38],42:[2,38]},{5:[2,22],14:[2,22],15:[2,22],16:[2,22],19:[2,22],20:[2,22],22:[2,22],23:[2,22],25:[2,22]},{5:[2,19],14:[2,19],15:[2,19],16:[2,19],19:[2,19],20:[2,19],22:[2,19],23:[2,19],25:[2,19]},{18:[2,47],24:[2,47],38:[2,47]},{39:[1,69]},{21:56,30:60,31:70,32:[1,57],33:[1,58],34:[1,59],38:[1,28],40:[1,27],41:26},{18:[2,32],24:[2,32],38:[2,32]}],
-  defaultActions: {3:[2,2],16:[2,1],50:[2,41]},
+  table: [{3:1,4:2,5:[1,3],8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[3]},{5:[1,16],8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[2,2]},{5:[2,9],14:[2,9],15:[2,9],16:[2,9],19:[2,9],20:[2,9],22:[2,9],23:[2,9],25:[2,9]},{4:20,6:18,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{4:20,6:22,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{5:[2,13],14:[2,13],15:[2,13],16:[2,13],19:[2,13],20:[2,13],22:[2,13],23:[2,13],25:[2,13]},{5:[2,14],14:[2,14],15:[2,14],16:[2,14],19:[2,14],20:[2,14],22:[2,14],23:[2,14],25:[2,14]},{5:[2,15],14:[2,15],15:[2,15],16:[2,15],19:[2,15],20:[2,15],22:[2,15],23:[2,15],25:[2,15]},{5:[2,16],14:[2,16],15:[2,16],16:[2,16],19:[2,16],20:[2,16],22:[2,16],23:[2,16],25:[2,16]},{17:23,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:29,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:30,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:31,21:24,32:25,41:[1,28],43:[1,27],44:26},{21:33,26:32,33:[1,34],34:[1,35],41:[1,28],44:26},{1:[2,1]},{5:[2,10],14:[2,10],15:[2,10],16:[2,10],19:[2,10],20:[2,10],22:[2,10],23:[2,10],25:[2,10]},{10:36,20:[1,37]},{4:38,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,7],22:[1,13],23:[1,14],25:[1,15]},{7:39,8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,6],22:[1,13],23:[1,14],25:[1,15]},{17:23,18:[1,40],21:24,32:25,41:[1,28],43:[1,27],44:26},{10:41,20:[1,37]},{18:[1,42]},{18:[2,46],24:[2,46],30:43,33:[2,46],34:[2,46],35:[2,46],36:[2,46],37:[2,46],41:[2,46],43:[2,46]},{18:[2,26],24:[2,26],37:[2,26]},{18:[2,39],24:[2,39],33:[2,39],34:[2,39],35:[2,39],36:[2,39],37:[2,39],41:[2,39],43:[2,39],45:[1,44]},{21:45,41:[1,28],44:26},{18:[2,41],24:[2,41],33:[2,41],34:[2,41],35:[2,41],36:[2,41],37:[2,41],41:[2,41],43:[2,41],45:[2,41]},{18:[1,46]},{18:[1,47]},{24:[1,48]},{18:[2,44],21:51,27:49,29:50,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],38:57,39:58,40:60,41:[1,59],43:[1,27],44:26},{18:[2,35],33:[2,35],34:[2,35],35:[2,35],36:[2,35],41:[2,35],43:[2,35]},{18:[2,36],33:[2,36],34:[2,36],35:[2,36],36:[2,36],41:[2,36],43:[2,36]},{18:[2,37],33:[2,37],34:[2,37],35:[2,37],36:[2,37],41:[2,37],43:[2,37]},{5:[2,11],14:[2,11],15:[2,11],16:[2,11],19:[2,11],20:[2,11],22:[2,11],23:[2,11],25:[2,11]},{21:61,41:[1,28],44:26},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,3],22:[1,13],23:[1,14],25:[1,15]},{4:62,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,5],22:[1,13],23:[1,14],25:[1,15]},{14:[2,24],15:[2,24],16:[2,24],19:[2,24],20:[2,24],22:[2,24],23:[2,24],25:[2,24]},{5:[2,12],14:[2,12],15:[2,12],16:[2,12],19:[2,12],20:[2,12],22:[2,12],23:[2,12],25:[2,12]},{14:[2,18],15:[2,18],16:[2,18],19:[2,18],20:[2,18],22:[2,18],23:[2,18],25:[2,18]},{18:[2,48],21:51,24:[2,48],27:64,31:63,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],37:[2,48],38:65,39:58,40:60,41:[1,59],43:[1,27],44:26},{41:[1,66]},{18:[2,38],24:[2,38],33:[2,38],34:[2,38],35:[2,38],36:[2,38],37:[2,38],41:[2,38],43:[2,38]},{14:[2,17],15:[2,17],16:[2,17],19:[2,17],20:[2,17],22:[2,17],23:[2,17],25:[2,17]},{5:[2,20],14:[2,20],15:[2,20],16:[2,20],19:[2,20],20:[2,20],22:[2,20],23:[2,20],25:[2,20]},{5:[2,21],14:[2,21],15:[2,21],16:[2,21],19:[2,21],20:[2,21],22:[2,21],23:[2,21],25:[2,21]},{18:[2,42],28:67,38:68,39:58,40:60,41:[1,69]},{18:[1,70]},{18:[2,27],24:[2,27],33:[2,27],34:[2,27],35:[2,27],36:[2,27],37:[2,27],41:[2,27],43:[2,27]},{18:[2,28],24:[2,28],33:[2,28],34:[2,28],35:[2,28],36:[2,28],37:[2,28],41:[2,28],43:[2,28]},{18:[2,29],24:[2,29],33:[2,29],34:[2,29],35:[2,29],36:[2,29],37:[2,29],41:[2,29],43:[2,29]},{18:[2,30],24:[2,30],33:[2,30],34:[2,30],35:[2,30],36:[2,30],37:[2,30],41:[2,30],43:[2,30]},{18:[2,31],24:[2,31],33:[2,31],34:[2,31],35:[2,31],36:[2,31],37:[2,31],41:[2,31],43:[2,31]},{17:71,21:24,32:25,41:[1,28],43:[1,27],44:26},{18:[2,45]},{18:[2,33],24:[2,33],37:[2,33],40:72,41:[1,69]},{18:[2,41],24:[2,41],33:[2,41],34:[2,41],35:[2,41],36:[2,41],37:[2,41],41:[2,41],42:[1,73],43:[2,41],45:[2,41]},{18:[2,50],24:[2,50],37:[2,50],41:[2,50]},{18:[1,74]},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,4],22:[1,13],23:[1,14],25:[1,15]},{18:[2,25],24:[2,25],37:[2,25]},{18:[2,47],24:[2,47],33:[2,47],34:[2,47],35:[2,47],36:[2,47],37:[2,47],41:[2,47],43:[2,47]},{18:[2,49],24:[2,49],37:[2,49]},{18:[2,40],24:[2,40],33:[2,40],34:[2,40],35:[2,40],36:[2,40],37:[2,40],41:[2,40],43:[2,40],45:[2,40]},{18:[1,75]},{18:[2,43]},{42:[1,73]},{5:[2,23],14:[2,23],15:[2,23],16:[2,23],19:[2,23],20:[2,23],22:[2,23],23:[2,23],25:[2,23]},{37:[1,76]},{18:[2,51],24:[2,51],37:[2,51],41:[2,51]},{21:51,27:77,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],41:[1,28],43:[1,27],44:26},{5:[2,19],14:[2,19],15:[2,19],16:[2,19],19:[2,19],20:[2,19],22:[2,19],23:[2,19],25:[2,19]},{5:[2,22],14:[2,22],15:[2,22],16:[2,22],19:[2,22],20:[2,22],22:[2,22],23:[2,22],25:[2,22]},{18:[2,32],24:[2,32],33:[2,32],34:[2,32],35:[2,32],36:[2,32],37:[2,32],41:[2,32],43:[2,32]},{18:[2,34],24:[2,34],37:[2,34],41:[2,34]}],
+  defaultActions: {3:[2,2],16:[2,1],57:[2,45],68:[2,43]},
   parseError: function parseError(str, hash) {
       throw new Error(str);
   },
@@ -889,8 +1050,8 @@ var __module9__ = (function() {
 
   function stripFlags(open, close) {
     return {
-      left: open[2] === '~',
-      right: close[0] === '~' || close[1] === '~'
+      left: open.charAt(2) === '~',
+      right: close.charAt(0) === '~' || close.charAt(1) === '~'
     };
   }
 
@@ -1089,71 +1250,74 @@ var __module9__ = (function() {
   case 1:return 14;
   break;
   case 2:
-                                     if(yy_.yytext.slice(-1) !== "\\") this.popState();
-                                     if(yy_.yytext.slice(-1) === "\\") strip(0,1);
+                                     this.popState();
                                      return 14;
                                    
   break;
   case 3:strip(0,4); this.popState(); return 15;
   break;
-  case 4:return 25;
+  case 4:return 36;
   break;
-  case 5:return 16;
+  case 5:return 37;
   break;
-  case 6:return 20;
+  case 6:return 25;
   break;
-  case 7:return 19;
+  case 7:return 16;
   break;
-  case 8:return 19;
+  case 8:return 20;
   break;
-  case 9:return 23;
+  case 9:return 19;
   break;
-  case 10:return 22;
+  case 10:return 19;
   break;
-  case 11:this.popState(); this.begin('com');
+  case 11:return 23;
   break;
-  case 12:strip(3,5); this.popState(); return 15;
+  case 12:return 22;
   break;
-  case 13:return 22;
+  case 13:this.popState(); this.begin('com');
   break;
-  case 14:return 39;
+  case 14:strip(3,5); this.popState(); return 15;
   break;
-  case 15:return 38;
+  case 15:return 22;
   break;
-  case 16:return 38;
+  case 16:return 42;
   break;
-  case 17:return 42;
+  case 17:return 41;
   break;
-  case 18:// ignore whitespace
+  case 18:return 41;
   break;
-  case 19:this.popState(); return 24;
+  case 19:return 45;
   break;
-  case 20:this.popState(); return 18;
+  case 20:// ignore whitespace
   break;
-  case 21:yy_.yytext = strip(1,2).replace(/\\"/g,'"'); return 32;
+  case 21:this.popState(); return 24;
   break;
-  case 22:yy_.yytext = strip(1,2).replace(/\\'/g,"'"); return 32;
+  case 22:this.popState(); return 18;
   break;
-  case 23:return 40;
+  case 23:yy_.yytext = strip(1,2).replace(/\\"/g,'"'); return 33;
   break;
-  case 24:return 34;
+  case 24:yy_.yytext = strip(1,2).replace(/\\'/g,"'"); return 33;
   break;
-  case 25:return 34;
+  case 25:return 43;
   break;
-  case 26:return 33;
+  case 26:return 35;
   break;
-  case 27:return 38;
+  case 27:return 35;
   break;
-  case 28:yy_.yytext = strip(1,2); return 38;
+  case 28:return 34;
   break;
-  case 29:return 'INVALID';
+  case 29:return 41;
   break;
-  case 30:return 5;
+  case 30:yy_.yytext = strip(1,2); return 41;
+  break;
+  case 31:return 'INVALID';
+  break;
+  case 32:return 5;
   break;
   }
   };
-  lexer.rules = [/^(?:[^\x00]*?(?=(\{\{)))/,/^(?:[^\x00]+)/,/^(?:[^\x00]{2,}?(?=(\{\{|$)))/,/^(?:[\s\S]*?--\}\})/,/^(?:\{\{(~)?>)/,/^(?:\{\{(~)?#)/,/^(?:\{\{(~)?\/)/,/^(?:\{\{(~)?\^)/,/^(?:\{\{(~)?\s*else\b)/,/^(?:\{\{(~)?\{)/,/^(?:\{\{(~)?&)/,/^(?:\{\{!--)/,/^(?:\{\{![\s\S]*?\}\})/,/^(?:\{\{(~)?)/,/^(?:=)/,/^(?:\.\.)/,/^(?:\.(?=([=~}\s\/.])))/,/^(?:[\/.])/,/^(?:\s+)/,/^(?:\}(~)?\}\})/,/^(?:(~)?\}\})/,/^(?:"(\\["]|[^"])*")/,/^(?:'(\\[']|[^'])*')/,/^(?:@)/,/^(?:true(?=([~}\s])))/,/^(?:false(?=([~}\s])))/,/^(?:-?[0-9]+(?=([~}\s])))/,/^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.]))))/,/^(?:\[[^\]]*\])/,/^(?:.)/,/^(?:$)/];
-  lexer.conditions = {"mu":{"rules":[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"inclusive":false},"emu":{"rules":[2],"inclusive":false},"com":{"rules":[3],"inclusive":false},"INITIAL":{"rules":[0,1,30],"inclusive":true}};
+  lexer.rules = [/^(?:[^\x00]*?(?=(\{\{)))/,/^(?:[^\x00]+)/,/^(?:[^\x00]{2,}?(?=(\{\{|\\\{\{|\\\\\{\{|$)))/,/^(?:[\s\S]*?--\}\})/,/^(?:\()/,/^(?:\))/,/^(?:\{\{(~)?>)/,/^(?:\{\{(~)?#)/,/^(?:\{\{(~)?\/)/,/^(?:\{\{(~)?\^)/,/^(?:\{\{(~)?\s*else\b)/,/^(?:\{\{(~)?\{)/,/^(?:\{\{(~)?&)/,/^(?:\{\{!--)/,/^(?:\{\{![\s\S]*?\}\})/,/^(?:\{\{(~)?)/,/^(?:=)/,/^(?:\.\.)/,/^(?:\.(?=([=~}\s\/.)])))/,/^(?:[\/.])/,/^(?:\s+)/,/^(?:\}(~)?\}\})/,/^(?:(~)?\}\})/,/^(?:"(\\["]|[^"])*")/,/^(?:'(\\[']|[^'])*')/,/^(?:@)/,/^(?:true(?=([~}\s)])))/,/^(?:false(?=([~}\s)])))/,/^(?:-?[0-9]+(?:\.[0-9]+)?(?=([~}\s)])))/,/^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.)]))))/,/^(?:\[[^\]]*\])/,/^(?:.)/,/^(?:$)/];
+  lexer.conditions = {"mu":{"rules":[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32],"inclusive":false},"emu":{"rules":[2],"inclusive":false},"com":{"rules":[3],"inclusive":false},"INITIAL":{"rules":[0,1,32],"inclusive":true}};
   return lexer;})()
   parser.lexer = lexer;
   function Parser () { this.yy = {}; }Parser.prototype = parser;parser.Parser = Parser;
@@ -1184,13 +1348,488 @@ var __module8__ = (function(__dependency1__, __dependency2__) {
   return __exports__;
 })(__module9__, __module7__);
 
+// handlebars/compiler/compiler.js
+var __module10__ = (function(__dependency1__) {
+  "use strict";
+  var __exports__ = {};
+  var Exception = __dependency1__;
+
+  function Compiler() {}
+
+  __exports__.Compiler = Compiler;// the foundHelper register will disambiguate helper lookup from finding a
+  // function in a context. This is necessary for mustache compatibility, which
+  // requires that context functions in blocks are evaluated by blockHelperMissing,
+  // and then proceed as if the resulting value was provided to blockHelperMissing.
+
+  Compiler.prototype = {
+    compiler: Compiler,
+
+    disassemble: function() {
+      var opcodes = this.opcodes, opcode, out = [], params, param;
+
+      for (var i=0, l=opcodes.length; i<l; i++) {
+        opcode = opcodes[i];
+
+        if (opcode.opcode === 'DECLARE') {
+          out.push("DECLARE " + opcode.name + "=" + opcode.value);
+        } else {
+          params = [];
+          for (var j=0; j<opcode.args.length; j++) {
+            param = opcode.args[j];
+            if (typeof param === "string") {
+              param = "\"" + param.replace("\n", "\\n") + "\"";
+            }
+            params.push(param);
+          }
+          out.push(opcode.opcode + " " + params.join(" "));
+        }
+      }
+
+      return out.join("\n");
+    },
+
+    equals: function(other) {
+      var len = this.opcodes.length;
+      if (other.opcodes.length !== len) {
+        return false;
+      }
+
+      for (var i = 0; i < len; i++) {
+        var opcode = this.opcodes[i],
+            otherOpcode = other.opcodes[i];
+        if (opcode.opcode !== otherOpcode.opcode || opcode.args.length !== otherOpcode.args.length) {
+          return false;
+        }
+        for (var j = 0; j < opcode.args.length; j++) {
+          if (opcode.args[j] !== otherOpcode.args[j]) {
+            return false;
+          }
+        }
+      }
+
+      len = this.children.length;
+      if (other.children.length !== len) {
+        return false;
+      }
+      for (i = 0; i < len; i++) {
+        if (!this.children[i].equals(other.children[i])) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+
+    guid: 0,
+
+    compile: function(program, options) {
+      this.opcodes = [];
+      this.children = [];
+      this.depths = {list: []};
+      this.options = options;
+      this.stringParams = options.stringParams;
+      this.trackIds = options.trackIds;
+
+      // These changes will propagate to the other compiler components
+      var knownHelpers = this.options.knownHelpers;
+      this.options.knownHelpers = {
+        'helperMissing': true,
+        'blockHelperMissing': true,
+        'each': true,
+        'if': true,
+        'unless': true,
+        'with': true,
+        'log': true
+      };
+      if (knownHelpers) {
+        for (var name in knownHelpers) {
+          this.options.knownHelpers[name] = knownHelpers[name];
+        }
+      }
+
+      return this.accept(program);
+    },
+
+    accept: function(node) {
+      var strip = node.strip || {},
+          ret;
+      if (strip.left) {
+        this.opcode('strip');
+      }
+
+      ret = this[node.type](node);
+
+      if (strip.right) {
+        this.opcode('strip');
+      }
+
+      return ret;
+    },
+
+    program: function(program) {
+      var statements = program.statements;
+
+      for(var i=0, l=statements.length; i<l; i++) {
+        this.accept(statements[i]);
+      }
+      this.isSimple = l === 1;
+
+      this.depths.list = this.depths.list.sort(function(a, b) {
+        return a - b;
+      });
+
+      return this;
+    },
+
+    compileProgram: function(program) {
+      var result = new this.compiler().compile(program, this.options);
+      var guid = this.guid++, depth;
+
+      this.usePartial = this.usePartial || result.usePartial;
+
+      this.children[guid] = result;
+
+      for(var i=0, l=result.depths.list.length; i<l; i++) {
+        depth = result.depths.list[i];
+
+        if(depth < 2) { continue; }
+        else { this.addDepth(depth - 1); }
+      }
+
+      return guid;
+    },
+
+    block: function(block) {
+      var mustache = block.mustache,
+          program = block.program,
+          inverse = block.inverse;
+
+      if (program) {
+        program = this.compileProgram(program);
+      }
+
+      if (inverse) {
+        inverse = this.compileProgram(inverse);
+      }
+
+      var sexpr = mustache.sexpr;
+      var type = this.classifySexpr(sexpr);
+
+      if (type === "helper") {
+        this.helperSexpr(sexpr, program, inverse);
+      } else if (type === "simple") {
+        this.simpleSexpr(sexpr);
+
+        // now that the simple mustache is resolved, we need to
+        // evaluate it by executing `blockHelperMissing`
+        this.opcode('pushProgram', program);
+        this.opcode('pushProgram', inverse);
+        this.opcode('emptyHash');
+        this.opcode('blockValue', sexpr.id.original);
+      } else {
+        this.ambiguousSexpr(sexpr, program, inverse);
+
+        // now that the simple mustache is resolved, we need to
+        // evaluate it by executing `blockHelperMissing`
+        this.opcode('pushProgram', program);
+        this.opcode('pushProgram', inverse);
+        this.opcode('emptyHash');
+        this.opcode('ambiguousBlockValue');
+      }
+
+      this.opcode('append');
+    },
+
+    hash: function(hash) {
+      var pairs = hash.pairs, pair;
+
+      this.opcode('pushHash');
+
+      for(var i=0, l=pairs.length; i<l; i++) {
+        pair = pairs[i];
+
+        this.pushParam(pair[1]);
+        this.opcode('assignToHash', pair[0]);
+      }
+      this.opcode('popHash');
+    },
+
+    partial: function(partial) {
+      var partialName = partial.partialName;
+      this.usePartial = true;
+
+      if (partial.hash) {
+        this.accept(partial.hash);
+      } else {
+        this.opcode('push', 'undefined');
+      }
+
+      if (partial.context) {
+        this.accept(partial.context);
+      } else {
+        this.opcode('push', 'depth0');
+      }
+
+      this.opcode('invokePartial', partialName.name);
+      this.opcode('append');
+    },
+
+    content: function(content) {
+      this.opcode('appendContent', content.string);
+    },
+
+    mustache: function(mustache) {
+      this.sexpr(mustache.sexpr);
+
+      if(mustache.escaped && !this.options.noEscape) {
+        this.opcode('appendEscaped');
+      } else {
+        this.opcode('append');
+      }
+    },
+
+    ambiguousSexpr: function(sexpr, program, inverse) {
+      var id = sexpr.id,
+          name = id.parts[0],
+          isBlock = program != null || inverse != null;
+
+      this.opcode('getContext', id.depth);
+
+      this.opcode('pushProgram', program);
+      this.opcode('pushProgram', inverse);
+
+      this.opcode('invokeAmbiguous', name, isBlock);
+    },
+
+    simpleSexpr: function(sexpr) {
+      var id = sexpr.id;
+
+      if (id.type === 'DATA') {
+        this.DATA(id);
+      } else if (id.parts.length) {
+        this.ID(id);
+      } else {
+        // Simplified ID for `this`
+        this.addDepth(id.depth);
+        this.opcode('getContext', id.depth);
+        this.opcode('pushContext');
+      }
+
+      this.opcode('resolvePossibleLambda');
+    },
+
+    helperSexpr: function(sexpr, program, inverse) {
+      var params = this.setupFullMustacheParams(sexpr, program, inverse),
+          id = sexpr.id,
+          name = id.parts[0];
+
+      if (this.options.knownHelpers[name]) {
+        this.opcode('invokeKnownHelper', params.length, name);
+      } else if (this.options.knownHelpersOnly) {
+        throw new Exception("You specified knownHelpersOnly, but used the unknown helper " + name, sexpr);
+      } else {
+        this.ID(id);
+        this.opcode('invokeHelper', params.length, name, sexpr.isRoot);
+      }
+    },
+
+    sexpr: function(sexpr) {
+      var type = this.classifySexpr(sexpr);
+
+      if (type === "simple") {
+        this.simpleSexpr(sexpr);
+      } else if (type === "helper") {
+        this.helperSexpr(sexpr);
+      } else {
+        this.ambiguousSexpr(sexpr);
+      }
+    },
+
+    ID: function(id) {
+      this.addDepth(id.depth);
+      this.opcode('getContext', id.depth);
+
+      var name = id.parts[0];
+      if (!name) {
+        this.opcode('pushContext');
+      } else {
+        this.opcode('lookupOnContext', id.parts[0]);
+      }
+
+      for(var i=1, l=id.parts.length; i<l; i++) {
+        this.opcode('lookup', id.parts[i]);
+      }
+    },
+
+    DATA: function(data) {
+      this.options.data = true;
+      if (data.id.isScoped || data.id.depth) {
+        throw new Exception('Scoped data references are not supported: ' + data.original, data);
+      }
+
+      this.opcode('lookupData');
+      var parts = data.id.parts;
+      for(var i=0, l=parts.length; i<l; i++) {
+        this.opcode('lookup', parts[i]);
+      }
+    },
+
+    STRING: function(string) {
+      this.opcode('pushString', string.string);
+    },
+
+    NUMBER: function(number) {
+      this.opcode('pushLiteral', number.number);
+    },
+
+    BOOLEAN: function(bool) {
+      this.opcode('pushLiteral', bool.bool);
+    },
+
+    comment: function() {},
+
+    // HELPERS
+    opcode: function(name) {
+      this.opcodes.push({ opcode: name, args: [].slice.call(arguments, 1) });
+    },
+
+    declare: function(name, value) {
+      this.opcodes.push({ opcode: 'DECLARE', name: name, value: value });
+    },
+
+    addDepth: function(depth) {
+      if(depth === 0) { return; }
+
+      if(!this.depths[depth]) {
+        this.depths[depth] = true;
+        this.depths.list.push(depth);
+      }
+    },
+
+    classifySexpr: function(sexpr) {
+      var isHelper   = sexpr.isHelper;
+      var isEligible = sexpr.eligibleHelper;
+      var options    = this.options;
+
+      // if ambiguous, we can possibly resolve the ambiguity now
+      // An eligible helper is one that does not have a complex path, i.e. `this.foo`, `../foo` etc.
+      if (isEligible && !isHelper) {
+        var name = sexpr.id.parts[0];
+
+        if (options.knownHelpers[name]) {
+          isHelper = true;
+        } else if (options.knownHelpersOnly) {
+          isEligible = false;
+        }
+      }
+
+      if (isHelper) { return "helper"; }
+      else if (isEligible) { return "ambiguous"; }
+      else { return "simple"; }
+    },
+
+    pushParams: function(params) {
+      var i = params.length;
+
+      while(i--) {
+        this.pushParam(params[i]);
+      }
+    },
+
+    pushParam: function(val) {
+      if (this.stringParams) {
+        if(val.depth) {
+          this.addDepth(val.depth);
+        }
+        this.opcode('getContext', val.depth || 0);
+        this.opcode('pushStringParam', val.stringModeValue, val.type);
+
+        if (val.type === 'sexpr') {
+          // Subexpressions get evaluated and passed in
+          // in string params mode.
+          this.sexpr(val);
+        }
+      } else {
+        if (this.trackIds) {
+          this.opcode('pushId', val.type, val.idName || val.stringModeValue);
+        }
+        this.accept(val);
+      }
+    },
+
+    setupFullMustacheParams: function(sexpr, program, inverse) {
+      var params = sexpr.params;
+      this.pushParams(params);
+
+      this.opcode('pushProgram', program);
+      this.opcode('pushProgram', inverse);
+
+      if (sexpr.hash) {
+        this.hash(sexpr.hash);
+      } else {
+        this.opcode('emptyHash');
+      }
+
+      return params;
+    }
+  };
+
+  function precompile(input, options, env) {
+    if (input == null || (typeof input !== 'string' && input.constructor !== env.AST.ProgramNode)) {
+      throw new Exception("You must pass a string or Handlebars AST to Handlebars.precompile. You passed " + input);
+    }
+
+    options = options || {};
+    if (!('data' in options)) {
+      options.data = true;
+    }
+
+    var ast = env.parse(input);
+    var environment = new env.Compiler().compile(ast, options);
+    return new env.JavaScriptCompiler().compile(environment, options);
+  }
+
+  __exports__.precompile = precompile;function compile(input, options, env) {
+    if (input == null || (typeof input !== 'string' && input.constructor !== env.AST.ProgramNode)) {
+      throw new Exception("You must pass a string or Handlebars AST to Handlebars.compile. You passed " + input);
+    }
+
+    options = options || {};
+
+    if (!('data' in options)) {
+      options.data = true;
+    }
+
+    var compiled;
+
+    function compileInput() {
+      var ast = env.parse(input);
+      var environment = new env.Compiler().compile(ast, options);
+      var templateSpec = new env.JavaScriptCompiler().compile(environment, options, undefined, true);
+      return env.template(templateSpec);
+    }
+
+    // Template is only compiled on first use and cached after that point.
+    return function(context, options) {
+      if (!compiled) {
+        compiled = compileInput();
+      }
+      return compiled.call(this, context, options);
+    };
+  }
+
+  __exports__.compile = compile;
+  return __exports__;
+})(__module5__);
+
 // handlebars/compiler/javascript-compiler.js
-var __module11__ = (function(__dependency1__) {
+var __module11__ = (function(__dependency1__, __dependency2__) {
   "use strict";
   var __exports__;
   var COMPILER_REVISION = __dependency1__.COMPILER_REVISION;
   var REVISION_CHANGES = __dependency1__.REVISION_CHANGES;
   var log = __dependency1__.log;
+  var Exception = __dependency2__;
 
   function Literal(value) {
     this.value = value;
@@ -1212,8 +1851,7 @@ var __module11__ = (function(__dependency1__) {
         ret = parent + "[" + name + "]";
       } else if (JavaScriptCompiler.isValidJavaScriptVariableName(name)) {
         ret = parent + "." + name;
-      }
-      else {
+      } else {
         ret = parent + "['" + name + "']";
       }
 
@@ -1222,6 +1860,12 @@ var __module11__ = (function(__dependency1__) {
       } else {
         return ret;
       }
+    },
+
+    compilerInfo: function() {
+      var revision = COMPILER_REVISION,
+          versions = REVISION_CHANGES[revision];
+      return "this.compilerInfo = ["+revision+",'"+versions+"'];\n";
     },
 
     appendToBuffer: function(string) {
@@ -1246,6 +1890,8 @@ var __module11__ = (function(__dependency1__) {
     compile: function(environment, options, context, asObject) {
       this.environment = environment;
       this.options = options || {};
+      this.stringParams = this.options.stringParams;
+      this.trackIds = this.options.trackIds;
 
       log('debug', this.environment.disassemble() + "\n\n");
 
@@ -1262,6 +1908,7 @@ var __module11__ = (function(__dependency1__) {
       this.stackSlot = 0;
       this.stackVars = [];
       this.registers = { list: [] };
+      this.hashes = [];
       this.compileStack = [];
       this.inlineStack = [];
 
@@ -1289,6 +1936,10 @@ var __module11__ = (function(__dependency1__) {
       // Flush any trailing content that might be pending.
       this.pushSource('');
 
+      if (this.stackSlot || this.inlineStack.length || this.compileStack.length) {
+        throw new Exception('Compile completed with content left on stack');
+      }
+
       return this.createFunctionContext(asObject);
     },
 
@@ -1300,7 +1951,7 @@ var __module11__ = (function(__dependency1__) {
 
         var copies = "helpers = this.merge(helpers, " + namespace + ".helpers);";
         if (this.environment.usePartial) { copies = copies + " partials = this.merge(partials, " + namespace + ".partials);"; }
-        if (this.options.data) { copies = copies + " data = data || {};"; }
+        if (this.options.data) { copies = copies + " data = this.initData(depth0, data);"; }
         out.push(copies);
       } else {
         out.push('');
@@ -1347,7 +1998,7 @@ var __module11__ = (function(__dependency1__) {
         this.pushSource("return buffer;");
       }
 
-      var params = this.isChild ? ["depth0", "data"] : ["Handlebars", "depth0", "helpers", "partials", "data"];
+      var params = this.isChild ? ["depth0", "data"] : [this.namespace, "depth0", "helpers", "partials", "data"];
 
       for(var i=0, l=this.environment.depths.list.length; i<l; i++) {
         params.push("depth" + this.environment.depths.list[i]);
@@ -1357,9 +2008,7 @@ var __module11__ = (function(__dependency1__) {
       var source = this.mergeSource();
 
       if (!this.isChild) {
-        var revision = COMPILER_REVISION,
-            versions = REVISION_CHANGES[revision];
-        source = "this.compilerInfo = ["+revision+",'"+versions+"'];\n"+source;
+        source = this.compilerInfo()+source;
       }
 
       if (asObject) {
@@ -1402,14 +2051,14 @@ var __module11__ = (function(__dependency1__) {
     // On stack, after: return value of blockHelperMissing
     //
     // The purpose of this opcode is to take a block of the form
-    // `{{#foo}}...{{/foo}}`, resolve the value of `foo`, and
+    // `{{#this.foo}}...{{/this.foo}}`, resolve the value of `foo`, and
     // replace it on the stack with the result of properly
     // invoking blockHelperMissing.
-    blockValue: function() {
+    blockValue: function(name) {
       this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
 
       var params = ["depth0"];
-      this.setupParams(0, params);
+      this.setupParams(name, 0, params);
 
       this.replaceStack(function(current) {
         params.splice(1, 0, current);
@@ -1426,14 +2075,14 @@ var __module11__ = (function(__dependency1__) {
     ambiguousBlockValue: function() {
       this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
 
+      // We're being a bit cheeky and reusing the options value from the prior exec
       var params = ["depth0"];
-      this.setupParams(0, params);
+      this.setupParams('', 0, params, true);
+
+      this.flushInline();
 
       var current = this.topStack();
       params.splice(1, 0, current);
-
-      // Use the options value generated from the invocation
-      params[params.length-1] = 'options';
 
       this.pushSource("if (!" + this.lastHelper + ") { " + current + " = blockHelperMissing.call(" + params.join(", ") + "); }");
     },
@@ -1570,7 +2219,7 @@ var __module11__ = (function(__dependency1__) {
     //
     // Push the data lookup operator
     lookupData: function() {
-      this.push('data');
+      this.pushStackLiteral('data');
     },
 
     // [pushStringParam]
@@ -1586,32 +2235,46 @@ var __module11__ = (function(__dependency1__) {
 
       this.pushString(type);
 
-      if (typeof string === 'string') {
-        this.pushString(string);
-      } else {
-        this.pushStackLiteral(string);
+      // If it's a subexpression, the string result
+      // will be pushed after this opcode.
+      if (type !== 'sexpr') {
+        if (typeof string === 'string') {
+          this.pushString(string);
+        } else {
+          this.pushStackLiteral(string);
+        }
       }
     },
 
     emptyHash: function() {
       this.pushStackLiteral('{}');
 
-      if (this.options.stringParams) {
-        this.register('hashTypes', '{}');
-        this.register('hashContexts', '{}');
+      if (this.trackIds) {
+        this.push('{}'); // hashIds
+      }
+      if (this.stringParams) {
+        this.push('{}'); // hashContexts
+        this.push('{}'); // hashTypes
       }
     },
     pushHash: function() {
-      this.hash = {values: [], types: [], contexts: []};
+      if (this.hash) {
+        this.hashes.push(this.hash);
+      }
+      this.hash = {values: [], types: [], contexts: [], ids: []};
     },
     popHash: function() {
       var hash = this.hash;
-      this.hash = undefined;
+      this.hash = this.hashes.pop();
 
-      if (this.options.stringParams) {
-        this.register('hashContexts', '{' + hash.contexts.join(',') + '}');
-        this.register('hashTypes', '{' + hash.types.join(',') + '}');
+      if (this.trackIds) {
+        this.push('{' + hash.ids.join(',') + '}');
       }
+      if (this.stringParams) {
+        this.push('{' + hash.contexts.join(',') + '}');
+        this.push('{' + hash.types.join(',') + '}');
+      }
+
       this.push('{\n    ' + hash.values.join(',\n    ') + '\n  }');
     },
 
@@ -1673,18 +2336,26 @@ var __module11__ = (function(__dependency1__) {
     // and pushes the helper's return value onto the stack.
     //
     // If the helper is not found, `helperMissing` is called.
-    invokeHelper: function(paramSize, name) {
+    invokeHelper: function(paramSize, name, isRoot) {
       this.context.aliases.helperMissing = 'helpers.helperMissing';
+      this.useRegister('helper');
 
-      var helper = this.lastHelper = this.setupHelper(paramSize, name, true);
-      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
+      var nonHelper = this.popStack();
+      var helper = this.setupHelper(paramSize, name);
 
-      this.push(helper.name + ' || ' + nonHelper);
-      this.replaceStack(function(name) {
-        return name + ' ? ' + name + '.call(' +
-            helper.callParams + ") " + ": helperMissing.call(" +
-            helper.helperMissingParams + ")";
-      });
+      var lookup = 'helper = ' + helper.name + ' || ' + nonHelper + ' || helperMissing';
+      if (helper.paramsInit) {
+        lookup += ',' + helper.paramsInit;
+      }
+
+      this.push('(' + lookup + ',helper.call(' + helper.callParams + '))');
+
+      // Always flush subexpressions. This is both to prevent the compounding size issue that
+      // occurs when the code has to be duplicated for inlining and also to prevent errors
+      // due to the incorrect options object being passed due to the shared register.
+      if (!isRoot) {
+        this.flushInline();
+      }
     },
 
     // [invokeKnownHelper]
@@ -1713,17 +2384,18 @@ var __module11__ = (function(__dependency1__) {
     // `knownHelpersOnly` flags at compile-time.
     invokeAmbiguous: function(name, helperCall) {
       this.context.aliases.functionType = '"function"';
+      this.useRegister('helper');
 
-      this.pushStackLiteral('{}');    // Hash value
+      this.emptyHash();
       var helper = this.setupHelper(0, name, helperCall);
 
       var helperName = this.lastHelper = this.nameLookup('helpers', name, 'helper');
-
       var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
-      var nextStack = this.nextStack();
 
-      this.pushSource('if (' + nextStack + ' = ' + helperName + ') { ' + nextStack + ' = ' + nextStack + '.call(' + helper.callParams + '); }');
-      this.pushSource('else { ' + nextStack + ' = ' + nonHelper + '; ' + nextStack + ' = typeof ' + nextStack + ' === functionType ? ' + nextStack + '.call(' + helper.callParams + ') : ' + nextStack + '; }');
+      this.push(
+        '((helper = ' + helperName + ' || ' + nonHelper
+          + (helper.paramsInit ? '),(' + helper.paramsInit : '') + '),'
+        + '(typeof helper === functionType ? helper.call(' + helper.callParams + ') : helper))');
     },
 
     // [invokePartial]
@@ -1734,7 +2406,7 @@ var __module11__ = (function(__dependency1__) {
     // This operation pops off a context, invokes a partial with that context,
     // and pushes the result of the invocation back.
     invokePartial: function(name) {
-      var params = [this.nameLookup('partials', name, 'partial'), "'" + name + "'", this.popStack(), "helpers", "partials"];
+      var params = [this.nameLookup('partials', name, 'partial'), "'" + name + "'", this.popStack(), this.popStack(), "helpers", "partials"];
 
       if (this.options.data) {
         params.push("data");
@@ -1754,9 +2426,13 @@ var __module11__ = (function(__dependency1__) {
     assignToHash: function(key) {
       var value = this.popStack(),
           context,
-          type;
+          type,
+          id;
 
-      if (this.options.stringParams) {
+      if (this.trackIds) {
+        id = this.popStack();
+      }
+      if (this.stringParams) {
         type = this.popStack();
         context = this.popStack();
       }
@@ -1768,7 +2444,20 @@ var __module11__ = (function(__dependency1__) {
       if (type) {
         hash.types.push("'" + key + "': " + type);
       }
+      if (id) {
+        hash.ids.push("'" + key + "': " + id);
+      }
       hash.values.push("'" + key + "': (" + value + ")");
+    },
+
+    pushId: function(type, name) {
+      if (type === 'ID' || type === 'DATA') {
+        this.pushString(name);
+      } else if (type === 'sexpr') {
+        this.pushStackLiteral('true');
+      } else {
+        this.pushStackLiteral('null');
+      }
     },
 
     // HELPERS
@@ -1869,7 +2558,9 @@ var __module11__ = (function(__dependency1__) {
     replaceStack: function(callback) {
       var prefix = '',
           inline = this.isInline(),
-          stack;
+          stack,
+          createdStack,
+          usedLiteral;
 
       // If we are currently inline then we want to merge the inline statement into the
       // replacement statement via ','
@@ -1879,9 +2570,11 @@ var __module11__ = (function(__dependency1__) {
         if (top instanceof Literal) {
           // Literals do not need to be inlined
           stack = top.value;
+          usedLiteral = true;
         } else {
           // Get or create the current stack name for use by the inline
-          var name = this.stackSlot ? this.topStackName() : this.incrStack();
+          createdStack = !this.stackSlot;
+          var name = !createdStack ? this.topStackName() : this.incrStack();
 
           prefix = '(' + this.push(name) + ' = ' + top + '),';
           stack = this.topStack();
@@ -1893,8 +2586,11 @@ var __module11__ = (function(__dependency1__) {
       var item = callback.call(this, stack);
 
       if (inline) {
-        if (this.inlineStack.length || this.compileStack.length) {
+        if (!usedLiteral) {
           this.popStack();
+        }
+        if (createdStack) {
+          this.stackSlot--;
         }
         this.push('(' + prefix + item + ')');
       } else {
@@ -1946,6 +2642,9 @@ var __module11__ = (function(__dependency1__) {
         return item.value;
       } else {
         if (!inline) {
+          if (!this.stackSlot) {
+            throw new Exception('Invalid stack pop');
+          }
           this.stackSlot--;
         }
         return item;
@@ -1973,25 +2672,44 @@ var __module11__ = (function(__dependency1__) {
         .replace(/\u2029/g, '\\u2029') + '"';
     },
 
-    setupHelper: function(paramSize, name, missingParams) {
-      var params = [];
-      this.setupParams(paramSize, params, missingParams);
+    setupHash: function(obj) {
+      var pairs = [];
+
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          pairs.push(this.quotedString(key) + ':' + obj[key]);
+        }
+      }
+
+      return '{' + pairs.join(',') + '}';
+    },
+
+    setupHelper: function(paramSize, name, blockHelper) {
+      var params = [],
+          paramsInit = this.setupParams(name, paramSize, params, blockHelper);
       var foundHelper = this.nameLookup('helpers', name, 'helper');
 
       return {
         params: params,
+        paramsInit: paramsInit,
         name: foundHelper,
-        callParams: ["depth0"].concat(params).join(", "),
-        helperMissingParams: missingParams && ["depth0", this.quotedString(name)].concat(params).join(", ")
+        callParams: ["depth0"].concat(params).join(", ")
       };
     },
 
-    // the params and contexts arguments are passed in arrays
-    // to fill in
-    setupParams: function(paramSize, params, useRegister) {
-      var options = [], contexts = [], types = [], param, inverse, program;
+    setupOptions: function(helper, paramSize, params) {
+      var options = {}, contexts = [], types = [], ids = [], param, inverse, program;
 
-      options.push("hash:" + this.popStack());
+      options.name = this.quotedString(helper);
+      options.hash = this.popStack();
+
+      if (this.trackIds) {
+        options.hashIds = this.popStack();
+      }
+      if (this.stringParams) {
+        options.hashTypes = this.popStack();
+        options.hashContexts = this.popStack();
+      }
 
       inverse = this.popStack();
       program = this.popStack();
@@ -2005,43 +2723,55 @@ var __module11__ = (function(__dependency1__) {
         }
 
         if (!inverse) {
-         this.context.aliases.self = "this";
+          this.context.aliases.self = "this";
           inverse = "self.noop";
         }
 
-        options.push("inverse:" + inverse);
-        options.push("fn:" + program);
+        options.fn = program;
+        options.inverse = inverse;
       }
 
-      for(var i=0; i<paramSize; i++) {
+      for (var i = 0; i < paramSize; i++) {
         param = this.popStack();
         params.push(param);
 
-        if(this.options.stringParams) {
+        if (this.trackIds) {
+          ids.push(this.popStack());
+        }
+        if (this.stringParams) {
           types.push(this.popStack());
           contexts.push(this.popStack());
         }
       }
 
-      if (this.options.stringParams) {
-        options.push("contexts:[" + contexts.join(",") + "]");
-        options.push("types:[" + types.join(",") + "]");
-        options.push("hashContexts:hashContexts");
-        options.push("hashTypes:hashTypes");
+      if (this.trackIds) {
+        options.ids = "[" + ids.join(",") + "]";
+      }
+      if (this.stringParams) {
+        options.types = "[" + types.join(",") + "]";
+        options.contexts = "[" + contexts.join(",") + "]";
       }
 
-      if(this.options.data) {
-        options.push("data:data");
+      if (this.options.data) {
+        options.data = "data";
       }
 
-      options = "{" + options.join(",") + "}";
+      return options;
+    },
+
+    // the params and contexts arguments are passed in arrays
+    // to fill in
+    setupParams: function(helperName, paramSize, params, useRegister) {
+      var options = this.setupHash(this.setupOptions(helperName, paramSize, params));
+
       if (useRegister) {
-        this.register('options', options);
+        this.useRegister('options');
         params.push('options');
+        return 'options=' + options;
       } else {
         params.push(options);
+        return '';
       }
-      return params.join(", ");
     }
   };
 
@@ -2070,492 +2800,12 @@ var __module11__ = (function(__dependency1__) {
   }
 
   JavaScriptCompiler.isValidJavaScriptVariableName = function(name) {
-    if(!JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]+$/.test(name)) {
-      return true;
-    }
-    return false;
+    return !JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(name);
   };
 
   __exports__ = JavaScriptCompiler;
   return __exports__;
-})(__module2__);
-
-// handlebars/compiler/compiler.js
-var __module10__ = (function(__dependency1__, __dependency2__, __dependency3__, __dependency4__) {
-  "use strict";
-  var __exports__ = {};
-  var Exception = __dependency1__;
-  var parse = __dependency2__.parse;
-  var JavaScriptCompiler = __dependency3__;
-  var AST = __dependency4__;
-
-  function Compiler() {}
-
-  __exports__.Compiler = Compiler;// the foundHelper register will disambiguate helper lookup from finding a
-  // function in a context. This is necessary for mustache compatibility, which
-  // requires that context functions in blocks are evaluated by blockHelperMissing,
-  // and then proceed as if the resulting value was provided to blockHelperMissing.
-
-  Compiler.prototype = {
-    compiler: Compiler,
-
-    disassemble: function() {
-      var opcodes = this.opcodes, opcode, out = [], params, param;
-
-      for (var i=0, l=opcodes.length; i<l; i++) {
-        opcode = opcodes[i];
-
-        if (opcode.opcode === 'DECLARE') {
-          out.push("DECLARE " + opcode.name + "=" + opcode.value);
-        } else {
-          params = [];
-          for (var j=0; j<opcode.args.length; j++) {
-            param = opcode.args[j];
-            if (typeof param === "string") {
-              param = "\"" + param.replace("\n", "\\n") + "\"";
-            }
-            params.push(param);
-          }
-          out.push(opcode.opcode + " " + params.join(" "));
-        }
-      }
-
-      return out.join("\n");
-    },
-
-    equals: function(other) {
-      var len = this.opcodes.length;
-      if (other.opcodes.length !== len) {
-        return false;
-      }
-
-      for (var i = 0; i < len; i++) {
-        var opcode = this.opcodes[i],
-            otherOpcode = other.opcodes[i];
-        if (opcode.opcode !== otherOpcode.opcode || opcode.args.length !== otherOpcode.args.length) {
-          return false;
-        }
-        for (var j = 0; j < opcode.args.length; j++) {
-          if (opcode.args[j] !== otherOpcode.args[j]) {
-            return false;
-          }
-        }
-      }
-
-      len = this.children.length;
-      if (other.children.length !== len) {
-        return false;
-      }
-      for (i = 0; i < len; i++) {
-        if (!this.children[i].equals(other.children[i])) {
-          return false;
-        }
-      }
-
-      return true;
-    },
-
-    guid: 0,
-
-    compile: function(program, options) {
-      this.opcodes = [];
-      this.children = [];
-      this.depths = {list: []};
-      this.options = options;
-
-      // These changes will propagate to the other compiler components
-      var knownHelpers = this.options.knownHelpers;
-      this.options.knownHelpers = {
-        'helperMissing': true,
-        'blockHelperMissing': true,
-        'each': true,
-        'if': true,
-        'unless': true,
-        'with': true,
-        'log': true
-      };
-      if (knownHelpers) {
-        for (var name in knownHelpers) {
-          this.options.knownHelpers[name] = knownHelpers[name];
-        }
-      }
-
-      return this.accept(program);
-    },
-
-    accept: function(node) {
-      var strip = node.strip || {},
-          ret;
-      if (strip.left) {
-        this.opcode('strip');
-      }
-
-      ret = this[node.type](node);
-
-      if (strip.right) {
-        this.opcode('strip');
-      }
-
-      return ret;
-    },
-
-    program: function(program) {
-      var statements = program.statements;
-
-      for(var i=0, l=statements.length; i<l; i++) {
-        this.accept(statements[i]);
-      }
-      this.isSimple = l === 1;
-
-      this.depths.list = this.depths.list.sort(function(a, b) {
-        return a - b;
-      });
-
-      return this;
-    },
-
-    compileProgram: function(program) {
-      var result = new this.compiler().compile(program, this.options);
-      var guid = this.guid++, depth;
-
-      this.usePartial = this.usePartial || result.usePartial;
-
-      this.children[guid] = result;
-
-      for(var i=0, l=result.depths.list.length; i<l; i++) {
-        depth = result.depths.list[i];
-
-        if(depth < 2) { continue; }
-        else { this.addDepth(depth - 1); }
-      }
-
-      return guid;
-    },
-
-    block: function(block) {
-      var mustache = block.mustache,
-          program = block.program,
-          inverse = block.inverse;
-
-      if (program) {
-        program = this.compileProgram(program);
-      }
-
-      if (inverse) {
-        inverse = this.compileProgram(inverse);
-      }
-
-      var type = this.classifyMustache(mustache);
-
-      if (type === "helper") {
-        this.helperMustache(mustache, program, inverse);
-      } else if (type === "simple") {
-        this.simpleMustache(mustache);
-
-        // now that the simple mustache is resolved, we need to
-        // evaluate it by executing `blockHelperMissing`
-        this.opcode('pushProgram', program);
-        this.opcode('pushProgram', inverse);
-        this.opcode('emptyHash');
-        this.opcode('blockValue');
-      } else {
-        this.ambiguousMustache(mustache, program, inverse);
-
-        // now that the simple mustache is resolved, we need to
-        // evaluate it by executing `blockHelperMissing`
-        this.opcode('pushProgram', program);
-        this.opcode('pushProgram', inverse);
-        this.opcode('emptyHash');
-        this.opcode('ambiguousBlockValue');
-      }
-
-      this.opcode('append');
-    },
-
-    hash: function(hash) {
-      var pairs = hash.pairs, pair, val;
-
-      this.opcode('pushHash');
-
-      for(var i=0, l=pairs.length; i<l; i++) {
-        pair = pairs[i];
-        val  = pair[1];
-
-        if (this.options.stringParams) {
-          if(val.depth) {
-            this.addDepth(val.depth);
-          }
-          this.opcode('getContext', val.depth || 0);
-          this.opcode('pushStringParam', val.stringModeValue, val.type);
-        } else {
-          this.accept(val);
-        }
-
-        this.opcode('assignToHash', pair[0]);
-      }
-      this.opcode('popHash');
-    },
-
-    partial: function(partial) {
-      var partialName = partial.partialName;
-      this.usePartial = true;
-
-      if(partial.context) {
-        this.ID(partial.context);
-      } else {
-        this.opcode('push', 'depth0');
-      }
-
-      this.opcode('invokePartial', partialName.name);
-      this.opcode('append');
-    },
-
-    content: function(content) {
-      this.opcode('appendContent', content.string);
-    },
-
-    mustache: function(mustache) {
-      var options = this.options;
-      var type = this.classifyMustache(mustache);
-
-      if (type === "simple") {
-        this.simpleMustache(mustache);
-      } else if (type === "helper") {
-        this.helperMustache(mustache);
-      } else {
-        this.ambiguousMustache(mustache);
-      }
-
-      if(mustache.escaped && !options.noEscape) {
-        this.opcode('appendEscaped');
-      } else {
-        this.opcode('append');
-      }
-    },
-
-    ambiguousMustache: function(mustache, program, inverse) {
-      var id = mustache.id,
-          name = id.parts[0],
-          isBlock = program != null || inverse != null;
-
-      this.opcode('getContext', id.depth);
-
-      this.opcode('pushProgram', program);
-      this.opcode('pushProgram', inverse);
-
-      this.opcode('invokeAmbiguous', name, isBlock);
-    },
-
-    simpleMustache: function(mustache) {
-      var id = mustache.id;
-
-      if (id.type === 'DATA') {
-        this.DATA(id);
-      } else if (id.parts.length) {
-        this.ID(id);
-      } else {
-        // Simplified ID for `this`
-        this.addDepth(id.depth);
-        this.opcode('getContext', id.depth);
-        this.opcode('pushContext');
-      }
-
-      this.opcode('resolvePossibleLambda');
-    },
-
-    helperMustache: function(mustache, program, inverse) {
-      var params = this.setupFullMustacheParams(mustache, program, inverse),
-          name = mustache.id.parts[0];
-
-      if (this.options.knownHelpers[name]) {
-        this.opcode('invokeKnownHelper', params.length, name);
-      } else if (this.options.knownHelpersOnly) {
-        throw new Error("You specified knownHelpersOnly, but used the unknown helper " + name);
-      } else {
-        this.opcode('invokeHelper', params.length, name);
-      }
-    },
-
-    ID: function(id) {
-      this.addDepth(id.depth);
-      this.opcode('getContext', id.depth);
-
-      var name = id.parts[0];
-      if (!name) {
-        this.opcode('pushContext');
-      } else {
-        this.opcode('lookupOnContext', id.parts[0]);
-      }
-
-      for(var i=1, l=id.parts.length; i<l; i++) {
-        this.opcode('lookup', id.parts[i]);
-      }
-    },
-
-    DATA: function(data) {
-      this.options.data = true;
-      if (data.id.isScoped || data.id.depth) {
-        throw new Exception('Scoped data references are not supported: ' + data.original);
-      }
-
-      this.opcode('lookupData');
-      var parts = data.id.parts;
-      for(var i=0, l=parts.length; i<l; i++) {
-        this.opcode('lookup', parts[i]);
-      }
-    },
-
-    STRING: function(string) {
-      this.opcode('pushString', string.string);
-    },
-
-    INTEGER: function(integer) {
-      this.opcode('pushLiteral', integer.integer);
-    },
-
-    BOOLEAN: function(bool) {
-      this.opcode('pushLiteral', bool.bool);
-    },
-
-    comment: function() {},
-
-    // HELPERS
-    opcode: function(name) {
-      this.opcodes.push({ opcode: name, args: [].slice.call(arguments, 1) });
-    },
-
-    declare: function(name, value) {
-      this.opcodes.push({ opcode: 'DECLARE', name: name, value: value });
-    },
-
-    addDepth: function(depth) {
-      if(isNaN(depth)) { throw new Error("EWOT"); }
-      if(depth === 0) { return; }
-
-      if(!this.depths[depth]) {
-        this.depths[depth] = true;
-        this.depths.list.push(depth);
-      }
-    },
-
-    classifyMustache: function(mustache) {
-      var isHelper   = mustache.isHelper;
-      var isEligible = mustache.eligibleHelper;
-      var options    = this.options;
-
-      // if ambiguous, we can possibly resolve the ambiguity now
-      if (isEligible && !isHelper) {
-        var name = mustache.id.parts[0];
-
-        if (options.knownHelpers[name]) {
-          isHelper = true;
-        } else if (options.knownHelpersOnly) {
-          isEligible = false;
-        }
-      }
-
-      if (isHelper) { return "helper"; }
-      else if (isEligible) { return "ambiguous"; }
-      else { return "simple"; }
-    },
-
-    pushParams: function(params) {
-      var i = params.length, param;
-
-      while(i--) {
-        param = params[i];
-
-        if(this.options.stringParams) {
-          if(param.depth) {
-            this.addDepth(param.depth);
-          }
-
-          this.opcode('getContext', param.depth || 0);
-          this.opcode('pushStringParam', param.stringModeValue, param.type);
-        } else {
-          this[param.type](param);
-        }
-      }
-    },
-
-    setupMustacheParams: function(mustache) {
-      var params = mustache.params;
-      this.pushParams(params);
-
-      if(mustache.hash) {
-        this.hash(mustache.hash);
-      } else {
-        this.opcode('emptyHash');
-      }
-
-      return params;
-    },
-
-    // this will replace setupMustacheParams when we're done
-    setupFullMustacheParams: function(mustache, program, inverse) {
-      var params = mustache.params;
-      this.pushParams(params);
-
-      this.opcode('pushProgram', program);
-      this.opcode('pushProgram', inverse);
-
-      if(mustache.hash) {
-        this.hash(mustache.hash);
-      } else {
-        this.opcode('emptyHash');
-      }
-
-      return params;
-    }
-  };
-
-  function precompile(input, options) {
-    if (input == null || (typeof input !== 'string' && input.constructor !== AST.ProgramNode)) {
-      throw new Exception("You must pass a string or Handlebars AST to Handlebars.precompile. You passed " + input);
-    }
-
-    options = options || {};
-    if (!('data' in options)) {
-      options.data = true;
-    }
-
-    var ast = parse(input);
-    var environment = new Compiler().compile(ast, options);
-    return new JavaScriptCompiler().compile(environment, options);
-  }
-
-  __exports__.precompile = precompile;function compile(input, options, env) {
-    if (input == null || (typeof input !== 'string' && input.constructor !== AST.ProgramNode)) {
-      throw new Exception("You must pass a string or Handlebars AST to Handlebars.compile. You passed " + input);
-    }
-
-    options = options || {};
-
-    if (!('data' in options)) {
-      options.data = true;
-    }
-
-    var compiled;
-
-    function compileInput() {
-      var ast = parse(input);
-      var environment = new Compiler().compile(ast, options);
-      var templateSpec = new JavaScriptCompiler().compile(environment, options, undefined, true);
-      return env.template(templateSpec);
-    }
-
-    // Template is only compiled on first use and cached after that point.
-    return function(context, options) {
-      if (!compiled) {
-        compiled = compileInput();
-      }
-      return compiled.call(this, context, options);
-    };
-  }
-
-  __exports__.compile = compile;
-  return __exports__;
-})(__module5__, __module8__, __module11__, __module7__);
+})(__module2__, __module5__);
 
 // handlebars.js
 var __module0__ = (function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__) {
@@ -2580,7 +2830,9 @@ var __module0__ = (function(__dependency1__, __dependency2__, __dependency3__, _
     hb.compile = function(input, options) {
       return compile(input, options, hb);
     };
-    hb.precompile = precompile;
+    hb.precompile = function (input, options) {
+      return precompile(input, options, hb);
+    };
 
     hb.AST = AST;
     hb.Compiler = Compiler;
