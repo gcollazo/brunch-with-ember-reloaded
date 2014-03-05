@@ -12,7 +12,7 @@
     "node": "~0.6.10 || 0.8 || 0.9"
   },
   "scripts": {
-    "test": "karma start",
+    "test": "karma start --single-run --browsers PhantomJS",
     "start": "brunch watch --server",
     "build": "brunch build",
     "update:ember": "node setup.js update:ember",
