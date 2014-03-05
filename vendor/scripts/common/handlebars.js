@@ -66,16 +66,12 @@ var __module3__ = (function(__dependency1__) {
     return escape[chr] || "&amp;";
   }
 
-  function extend(obj /* , ...source */) {
-    for (var i = 1; i < arguments.length; i++) {
-      for (var key in arguments[i]) {
-        if (Object.prototype.hasOwnProperty.call(arguments[i], key)) {
-          obj[key] = arguments[i][key];
-        }
+  function extend(obj, value) {
+    for(var key in value) {
+      if(Object.prototype.hasOwnProperty.call(value, key)) {
+        obj[key] = value[key];
       }
     }
-
-    return obj;
   }
 
   __exports__.extend = extend;var toString = Object.prototype.toString;
@@ -125,11 +121,7 @@ var __module3__ = (function(__dependency1__) {
     }
   }
 
-  __exports__.isEmpty = isEmpty;function appendContextPath(contextPath, id) {
-    return (contextPath ? contextPath + '.' : '') + id;
-  }
-
-  __exports__.appendContextPath = appendContextPath;
+  __exports__.isEmpty = isEmpty;
   return __exports__;
 })(__module4__);
 
@@ -211,9 +203,6 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
         this.helpers[name] = fn;
       }
     },
-    unregisterHelper: function(name) {
-      delete this.helpers[name];
-    },
 
     registerPartial: function(name, str) {
       if (toString.call(name) === objectType) {
@@ -221,20 +210,15 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
       } else {
         this.partials[name] = str;
       }
-    },
-    unregisterPartial: function(name) {
-      delete this.partials[name];
     }
   };
 
   function registerDefaultHelpers(instance) {
-    instance.registerHelper('helperMissing', function(/* [args, ]options */) {
-      if(arguments.length === 1) {
-        // A missing field in a {{foo}} constuct.
+    instance.registerHelper('helperMissing', function(arg) {
+      if(arguments.length === 2) {
         return undefined;
       } else {
-        // Someone is actually trying to call something, blow up.
-        throw new Exception("Missing helper: '" + arguments[arguments.length-1].name + "'");
+        throw new Exception("Missing helper: '" + arg + "'");
       }
     });
 
@@ -249,39 +233,18 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
         return inverse(this);
       } else if (isArray(context)) {
         if(context.length > 0) {
-          if (options.ids) {
-            options.ids = [options.name];
-          }
-
           return instance.helpers.each(context, options);
         } else {
           return inverse(this);
         }
       } else {
-        if (options.data && options.ids) {
-          var data = createFrame(options.data);
-          data.contextPath = Utils.appendContextPath(options.data.contextPath, options.name);
-          options = {data: data};
-        }
-
-        return fn(context, options);
+        return fn(context);
       }
     });
 
     instance.registerHelper('each', function(context, options) {
-      // Allow for {{#each}}
-      if (!options) {
-        options = context;
-        context = this;
-      }
-
       var fn = options.fn, inverse = options.inverse;
       var i = 0, ret = "", data;
-
-      var contextPath;
-      if (options.data && options.ids) {
-        contextPath = Utils.appendContextPath(options.data.contextPath, options.ids[0]) + '.';
-      }
 
       if (isFunction(context)) { context = context.call(this); }
 
@@ -296,10 +259,6 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
               data.index = i;
               data.first = (i === 0);
               data.last  = (i === (context.length-1));
-
-              if (contextPath) {
-                data.contextPath = contextPath + i;
-              }
             }
             ret = ret + fn(context[i], { data: data });
           }
@@ -310,10 +269,6 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
                 data.key = key;
                 data.index = i;
                 data.first = (i === 0);
-
-                if (contextPath) {
-                  data.contextPath = contextPath + key;
-                }
               }
               ret = ret + fn(context[key], {data: data});
               i++;
@@ -349,17 +304,7 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
     instance.registerHelper('with', function(context, options) {
       if (isFunction(context)) { context = context.call(this); }
 
-      var fn = options.fn;
-
-      if (!Utils.isEmpty(context)) {
-        if (options.data && options.ids) {
-          var data = createFrame(options.data);
-          data.contextPath = Utils.appendContextPath(options.data.contextPath, options.ids[0]);
-          options = {data:data};
-        }
-
-        return fn(context, options);
-      }
+      if (!Utils.isEmpty(context)) return options.fn(context);
     });
 
     instance.registerHelper('log', function(context, options) {
@@ -392,7 +337,9 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
   function log(level, obj) { logger.log(level, obj); }
 
   __exports__.log = log;var createFrame = function(object) {
-    return Utils.extend({}, object);
+    var obj = {};
+    Utils.extend(obj, object);
+    return obj;
   };
   __exports__.createFrame = createFrame;
   return __exports__;
@@ -406,7 +353,6 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
   var Exception = __dependency2__;
   var COMPILER_REVISION = __dependency3__.COMPILER_REVISION;
   var REVISION_CHANGES = __dependency3__.REVISION_CHANGES;
-  var createFrame = __dependency3__.createFrame;
 
   function checkRevision(compilerInfo) {
     var compilerRevision = compilerInfo && compilerInfo[0] || 1,
@@ -435,12 +381,8 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
 
     // Note: Using env.VM references rather than local var references throughout this section to allow
     // for external users to override these as psuedo-supported APIs.
-    var invokePartialWrapper = function(partial, name, context, hash, helpers, partials, data) {
-      if (hash) {
-        context = Utils.extend({}, context, hash);
-      }
-
-      var result = env.VM.invokePartial.call(this, partial, name, context, helpers, partials, data);
+    var invokePartialWrapper = function(partial, name, context, helpers, partials, data) {
+      var result = env.VM.invokePartial.apply(this, arguments);
       if (result != null) { return result; }
 
       if (env.compile) {
@@ -466,20 +408,14 @@ var __module6__ = (function(__dependency1__, __dependency2__, __dependency3__) {
         }
         return programWrapper;
       },
-      initData: function(context, data) {
-        if (!data || !('root' in data)) {
-          data = data ? createFrame(data) : {};
-          data.root = context;
-        }
-        return data;
-      },
       merge: function(param, common) {
         var ret = param || common;
 
         if (param && common && (param !== common)) {
-          ret = Utils.extend({}, common, param);
+          ret = {};
+          Utils.extend(ret, common);
+          Utils.extend(ret, param);
         }
-
         return ret;
       },
       programWithDepth: env.VM.programWithDepth,
@@ -679,26 +615,25 @@ var __module7__ = (function(__dependency1__) {
       var id = this.id = rawParams[0];
       var params = this.params = rawParams.slice(1);
 
+      // a mustache is an eligible helper if:
+      // * its id is simple (a single part, not `this` or `..`)
+      var eligibleHelper = this.eligibleHelper = id.isSimple;
+
       // a mustache is definitely a helper if:
       // * it is an eligible helper, and
       // * it has at least one parameter or hash segment
-      this.isHelper = params.length || hash;
-
-      // a mustache is an eligible helper if:
-      // * its id is simple (a single part, not `this` or `..`)
-      this.eligibleHelper = this.isHelper || id.isSimple;
+      this.isHelper = eligibleHelper && (params.length || hash);
 
       // if a mustache is an eligible helper but not a definite
       // helper, it is ambiguous, and will be resolved in a later
       // pass or at runtime.
     },
 
-    PartialNode: function(partialName, context, hash, strip, locInfo) {
+    PartialNode: function(partialName, context, strip, locInfo) {
       LocationInfo.call(this, locInfo);
       this.type         = "partial";
       this.partialName  = partialName;
       this.context      = context;
-      this.hash = hash;
       this.strip = strip;
     },
 
@@ -745,8 +680,7 @@ var __module7__ = (function(__dependency1__) {
 
       var original = "",
           dig = [],
-          depth = 0,
-          depthString = '';
+          depth = 0;
 
       for(var i=0,l=parts.length; i<l; i++) {
         var part = parts[i].part;
@@ -757,7 +691,6 @@ var __module7__ = (function(__dependency1__) {
             throw new Exception("Invalid path: " + original, this);
           } else if (part === "..") {
             depth++;
-            depthString += '../';
           } else {
             this.isScoped = true;
           }
@@ -770,7 +703,6 @@ var __module7__ = (function(__dependency1__) {
       this.parts    = dig;
       this.string   = dig.join('.');
       this.depth    = depth;
-      this.idName   = depthString + this.string;
 
       // an ID is simple if it only has one part, and that part is not
       // `..` or `this`.
@@ -789,8 +721,6 @@ var __module7__ = (function(__dependency1__) {
       LocationInfo.call(this, locInfo);
       this.type = "DATA";
       this.id = id;
-      this.stringModeValue = id.stringModeValue;
-      this.idName = '@' + id.stringModeValue;
     },
 
     StringNode: function(string, locInfo) {
@@ -801,12 +731,12 @@ var __module7__ = (function(__dependency1__) {
         this.stringModeValue = string;
     },
 
-    NumberNode: function(number, locInfo) {
+    IntegerNode: function(integer, locInfo) {
       LocationInfo.call(this, locInfo);
-      this.type = "NUMBER";
+      this.type = "INTEGER";
       this.original =
-        this.number = number;
-      this.stringModeValue = Number(number);
+        this.integer = integer;
+      this.stringModeValue = Number(integer);
     },
 
     BooleanNode: function(bool, locInfo) {
@@ -838,16 +768,16 @@ var __module9__ = (function() {
   var handlebars = (function(){
   var parser = {trace: function trace() { },
   yy: {},
-  symbols_: {"error":2,"root":3,"statements":4,"EOF":5,"program":6,"simpleInverse":7,"statement":8,"openInverse":9,"closeBlock":10,"openBlock":11,"mustache":12,"partial":13,"CONTENT":14,"COMMENT":15,"OPEN_BLOCK":16,"sexpr":17,"CLOSE":18,"OPEN_INVERSE":19,"OPEN_ENDBLOCK":20,"path":21,"OPEN":22,"OPEN_UNESCAPED":23,"CLOSE_UNESCAPED":24,"OPEN_PARTIAL":25,"partialName":26,"param":27,"partial_option0":28,"partial_option1":29,"sexpr_repetition0":30,"sexpr_option0":31,"dataName":32,"STRING":33,"NUMBER":34,"BOOLEAN":35,"OPEN_SEXPR":36,"CLOSE_SEXPR":37,"hash":38,"hash_repetition_plus0":39,"hashSegment":40,"ID":41,"EQUALS":42,"DATA":43,"pathSegments":44,"SEP":45,"$accept":0,"$end":1},
-  terminals_: {2:"error",5:"EOF",14:"CONTENT",15:"COMMENT",16:"OPEN_BLOCK",18:"CLOSE",19:"OPEN_INVERSE",20:"OPEN_ENDBLOCK",22:"OPEN",23:"OPEN_UNESCAPED",24:"CLOSE_UNESCAPED",25:"OPEN_PARTIAL",33:"STRING",34:"NUMBER",35:"BOOLEAN",36:"OPEN_SEXPR",37:"CLOSE_SEXPR",41:"ID",42:"EQUALS",43:"DATA",45:"SEP"},
-  productions_: [0,[3,2],[3,1],[6,2],[6,3],[6,2],[6,1],[6,1],[6,0],[4,1],[4,2],[8,3],[8,3],[8,1],[8,1],[8,1],[8,1],[11,3],[9,3],[10,3],[12,3],[12,3],[13,5],[13,4],[7,2],[17,3],[17,1],[27,1],[27,1],[27,1],[27,1],[27,1],[27,3],[38,1],[40,3],[26,1],[26,1],[26,1],[32,2],[21,1],[44,3],[44,1],[28,0],[28,1],[29,0],[29,1],[30,0],[30,2],[31,0],[31,1],[39,1],[39,2]],
+  symbols_: {"error":2,"root":3,"statements":4,"EOF":5,"program":6,"simpleInverse":7,"statement":8,"openInverse":9,"closeBlock":10,"openBlock":11,"mustache":12,"partial":13,"CONTENT":14,"COMMENT":15,"OPEN_BLOCK":16,"sexpr":17,"CLOSE":18,"OPEN_INVERSE":19,"OPEN_ENDBLOCK":20,"path":21,"OPEN":22,"OPEN_UNESCAPED":23,"CLOSE_UNESCAPED":24,"OPEN_PARTIAL":25,"partialName":26,"partial_option0":27,"sexpr_repetition0":28,"sexpr_option0":29,"dataName":30,"param":31,"STRING":32,"INTEGER":33,"BOOLEAN":34,"OPEN_SEXPR":35,"CLOSE_SEXPR":36,"hash":37,"hash_repetition_plus0":38,"hashSegment":39,"ID":40,"EQUALS":41,"DATA":42,"pathSegments":43,"SEP":44,"$accept":0,"$end":1},
+  terminals_: {2:"error",5:"EOF",14:"CONTENT",15:"COMMENT",16:"OPEN_BLOCK",18:"CLOSE",19:"OPEN_INVERSE",20:"OPEN_ENDBLOCK",22:"OPEN",23:"OPEN_UNESCAPED",24:"CLOSE_UNESCAPED",25:"OPEN_PARTIAL",32:"STRING",33:"INTEGER",34:"BOOLEAN",35:"OPEN_SEXPR",36:"CLOSE_SEXPR",40:"ID",41:"EQUALS",42:"DATA",44:"SEP"},
+  productions_: [0,[3,2],[3,1],[6,2],[6,3],[6,2],[6,1],[6,1],[6,0],[4,1],[4,2],[8,3],[8,3],[8,1],[8,1],[8,1],[8,1],[11,3],[9,3],[10,3],[12,3],[12,3],[13,4],[7,2],[17,3],[17,1],[31,1],[31,1],[31,1],[31,1],[31,1],[31,3],[37,1],[39,3],[26,1],[26,1],[26,1],[30,2],[21,1],[43,3],[43,1],[27,0],[27,1],[28,0],[28,2],[29,0],[29,1],[38,1],[38,2]],
   performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
 
   var $0 = $$.length - 1;
   switch (yystate) {
-  case 1: return new yy.ProgramNode($$[$0-1], this._$); 
+  case 1: return new yy.ProgramNode($$[$0-1], this._$);
   break;
-  case 2: return new yy.ProgramNode([], this._$); 
+  case 2: return new yy.ProgramNode([], this._$);
   break;
   case 3:this.$ = new yy.ProgramNode([], $$[$0-1], $$[$0], this._$);
   break;
@@ -863,7 +793,7 @@ var __module9__ = (function() {
   break;
   case 9:this.$ = [$$[$0]];
   break;
-  case 10: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
+  case 10: $$[$0-1].push($$[$0]); this.$ = $$[$0-1];
   break;
   case 11:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1].inverse, $$[$0-1], $$[$0], this._$);
   break;
@@ -887,58 +817,56 @@ var __module9__ = (function() {
   break;
   case 21:this.$ = new yy.MustacheNode($$[$0-1], null, $$[$0-2], stripFlags($$[$0-2], $$[$0]), this._$);
   break;
-  case 22:this.$ = new yy.PartialNode($$[$0-3], $$[$0-2], $$[$0-1], stripFlags($$[$0-4], $$[$0]), this._$);
+  case 22:this.$ = new yy.PartialNode($$[$0-2], $$[$0-1], stripFlags($$[$0-3], $$[$0]), this._$);
   break;
-  case 23:this.$ = new yy.PartialNode($$[$0-2], undefined, $$[$0-1], stripFlags($$[$0-3], $$[$0]), this._$);
+  case 23:this.$ = stripFlags($$[$0-1], $$[$0]);
   break;
-  case 24:this.$ = stripFlags($$[$0-1], $$[$0]);
+  case 24:this.$ = new yy.SexprNode([$$[$0-2]].concat($$[$0-1]), $$[$0], this._$);
   break;
-  case 25:this.$ = new yy.SexprNode([$$[$0-2]].concat($$[$0-1]), $$[$0], this._$);
+  case 25:this.$ = new yy.SexprNode([$$[$0]], null, this._$);
   break;
-  case 26:this.$ = new yy.SexprNode([$$[$0]], null, this._$);
+  case 26:this.$ = $$[$0];
   break;
-  case 27:this.$ = $$[$0];
+  case 27:this.$ = new yy.StringNode($$[$0], this._$);
   break;
-  case 28:this.$ = new yy.StringNode($$[$0], this._$);
+  case 28:this.$ = new yy.IntegerNode($$[$0], this._$);
   break;
-  case 29:this.$ = new yy.NumberNode($$[$0], this._$);
+  case 29:this.$ = new yy.BooleanNode($$[$0], this._$);
   break;
-  case 30:this.$ = new yy.BooleanNode($$[$0], this._$);
+  case 30:this.$ = $$[$0];
   break;
-  case 31:this.$ = $$[$0];
+  case 31:$$[$0-1].isHelper = true; this.$ = $$[$0-1];
   break;
-  case 32:$$[$0-1].isHelper = true; this.$ = $$[$0-1];
+  case 32:this.$ = new yy.HashNode($$[$0], this._$);
   break;
-  case 33:this.$ = new yy.HashNode($$[$0], this._$);
+  case 33:this.$ = [$$[$0-2], $$[$0]];
   break;
-  case 34:this.$ = [$$[$0-2], $$[$0]];
+  case 34:this.$ = new yy.PartialNameNode($$[$0], this._$);
   break;
-  case 35:this.$ = new yy.PartialNameNode($$[$0], this._$);
+  case 35:this.$ = new yy.PartialNameNode(new yy.StringNode($$[$0], this._$), this._$);
   break;
-  case 36:this.$ = new yy.PartialNameNode(new yy.StringNode($$[$0], this._$), this._$);
+  case 36:this.$ = new yy.PartialNameNode(new yy.IntegerNode($$[$0], this._$));
   break;
-  case 37:this.$ = new yy.PartialNameNode(new yy.NumberNode($$[$0], this._$));
+  case 37:this.$ = new yy.DataNode($$[$0], this._$);
   break;
-  case 38:this.$ = new yy.DataNode($$[$0], this._$);
+  case 38:this.$ = new yy.IdNode($$[$0], this._$);
   break;
-  case 39:this.$ = new yy.IdNode($$[$0], this._$);
+  case 39: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2];
   break;
-  case 40: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2]; 
+  case 40:this.$ = [{part: $$[$0]}];
   break;
-  case 41:this.$ = [{part: $$[$0]}];
+  case 43:this.$ = [];
   break;
-  case 46:this.$ = [];
+  case 44:$$[$0-1].push($$[$0]);
   break;
-  case 47:$$[$0-1].push($$[$0]);
+  case 47:this.$ = [$$[$0]];
   break;
-  case 50:this.$ = [$$[$0]];
-  break;
-  case 51:$$[$0-1].push($$[$0]);
+  case 48:$$[$0-1].push($$[$0]);
   break;
   }
   },
-  table: [{3:1,4:2,5:[1,3],8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[3]},{5:[1,16],8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[2,2]},{5:[2,9],14:[2,9],15:[2,9],16:[2,9],19:[2,9],20:[2,9],22:[2,9],23:[2,9],25:[2,9]},{4:20,6:18,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{4:20,6:22,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{5:[2,13],14:[2,13],15:[2,13],16:[2,13],19:[2,13],20:[2,13],22:[2,13],23:[2,13],25:[2,13]},{5:[2,14],14:[2,14],15:[2,14],16:[2,14],19:[2,14],20:[2,14],22:[2,14],23:[2,14],25:[2,14]},{5:[2,15],14:[2,15],15:[2,15],16:[2,15],19:[2,15],20:[2,15],22:[2,15],23:[2,15],25:[2,15]},{5:[2,16],14:[2,16],15:[2,16],16:[2,16],19:[2,16],20:[2,16],22:[2,16],23:[2,16],25:[2,16]},{17:23,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:29,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:30,21:24,32:25,41:[1,28],43:[1,27],44:26},{17:31,21:24,32:25,41:[1,28],43:[1,27],44:26},{21:33,26:32,33:[1,34],34:[1,35],41:[1,28],44:26},{1:[2,1]},{5:[2,10],14:[2,10],15:[2,10],16:[2,10],19:[2,10],20:[2,10],22:[2,10],23:[2,10],25:[2,10]},{10:36,20:[1,37]},{4:38,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,7],22:[1,13],23:[1,14],25:[1,15]},{7:39,8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,6],22:[1,13],23:[1,14],25:[1,15]},{17:23,18:[1,40],21:24,32:25,41:[1,28],43:[1,27],44:26},{10:41,20:[1,37]},{18:[1,42]},{18:[2,46],24:[2,46],30:43,33:[2,46],34:[2,46],35:[2,46],36:[2,46],37:[2,46],41:[2,46],43:[2,46]},{18:[2,26],24:[2,26],37:[2,26]},{18:[2,39],24:[2,39],33:[2,39],34:[2,39],35:[2,39],36:[2,39],37:[2,39],41:[2,39],43:[2,39],45:[1,44]},{21:45,41:[1,28],44:26},{18:[2,41],24:[2,41],33:[2,41],34:[2,41],35:[2,41],36:[2,41],37:[2,41],41:[2,41],43:[2,41],45:[2,41]},{18:[1,46]},{18:[1,47]},{24:[1,48]},{18:[2,44],21:51,27:49,29:50,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],38:57,39:58,40:60,41:[1,59],43:[1,27],44:26},{18:[2,35],33:[2,35],34:[2,35],35:[2,35],36:[2,35],41:[2,35],43:[2,35]},{18:[2,36],33:[2,36],34:[2,36],35:[2,36],36:[2,36],41:[2,36],43:[2,36]},{18:[2,37],33:[2,37],34:[2,37],35:[2,37],36:[2,37],41:[2,37],43:[2,37]},{5:[2,11],14:[2,11],15:[2,11],16:[2,11],19:[2,11],20:[2,11],22:[2,11],23:[2,11],25:[2,11]},{21:61,41:[1,28],44:26},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,3],22:[1,13],23:[1,14],25:[1,15]},{4:62,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,5],22:[1,13],23:[1,14],25:[1,15]},{14:[2,24],15:[2,24],16:[2,24],19:[2,24],20:[2,24],22:[2,24],23:[2,24],25:[2,24]},{5:[2,12],14:[2,12],15:[2,12],16:[2,12],19:[2,12],20:[2,12],22:[2,12],23:[2,12],25:[2,12]},{14:[2,18],15:[2,18],16:[2,18],19:[2,18],20:[2,18],22:[2,18],23:[2,18],25:[2,18]},{18:[2,48],21:51,24:[2,48],27:64,31:63,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],37:[2,48],38:65,39:58,40:60,41:[1,59],43:[1,27],44:26},{41:[1,66]},{18:[2,38],24:[2,38],33:[2,38],34:[2,38],35:[2,38],36:[2,38],37:[2,38],41:[2,38],43:[2,38]},{14:[2,17],15:[2,17],16:[2,17],19:[2,17],20:[2,17],22:[2,17],23:[2,17],25:[2,17]},{5:[2,20],14:[2,20],15:[2,20],16:[2,20],19:[2,20],20:[2,20],22:[2,20],23:[2,20],25:[2,20]},{5:[2,21],14:[2,21],15:[2,21],16:[2,21],19:[2,21],20:[2,21],22:[2,21],23:[2,21],25:[2,21]},{18:[2,42],28:67,38:68,39:58,40:60,41:[1,69]},{18:[1,70]},{18:[2,27],24:[2,27],33:[2,27],34:[2,27],35:[2,27],36:[2,27],37:[2,27],41:[2,27],43:[2,27]},{18:[2,28],24:[2,28],33:[2,28],34:[2,28],35:[2,28],36:[2,28],37:[2,28],41:[2,28],43:[2,28]},{18:[2,29],24:[2,29],33:[2,29],34:[2,29],35:[2,29],36:[2,29],37:[2,29],41:[2,29],43:[2,29]},{18:[2,30],24:[2,30],33:[2,30],34:[2,30],35:[2,30],36:[2,30],37:[2,30],41:[2,30],43:[2,30]},{18:[2,31],24:[2,31],33:[2,31],34:[2,31],35:[2,31],36:[2,31],37:[2,31],41:[2,31],43:[2,31]},{17:71,21:24,32:25,41:[1,28],43:[1,27],44:26},{18:[2,45]},{18:[2,33],24:[2,33],37:[2,33],40:72,41:[1,69]},{18:[2,41],24:[2,41],33:[2,41],34:[2,41],35:[2,41],36:[2,41],37:[2,41],41:[2,41],42:[1,73],43:[2,41],45:[2,41]},{18:[2,50],24:[2,50],37:[2,50],41:[2,50]},{18:[1,74]},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,4],22:[1,13],23:[1,14],25:[1,15]},{18:[2,25],24:[2,25],37:[2,25]},{18:[2,47],24:[2,47],33:[2,47],34:[2,47],35:[2,47],36:[2,47],37:[2,47],41:[2,47],43:[2,47]},{18:[2,49],24:[2,49],37:[2,49]},{18:[2,40],24:[2,40],33:[2,40],34:[2,40],35:[2,40],36:[2,40],37:[2,40],41:[2,40],43:[2,40],45:[2,40]},{18:[1,75]},{18:[2,43]},{42:[1,73]},{5:[2,23],14:[2,23],15:[2,23],16:[2,23],19:[2,23],20:[2,23],22:[2,23],23:[2,23],25:[2,23]},{37:[1,76]},{18:[2,51],24:[2,51],37:[2,51],41:[2,51]},{21:51,27:77,32:55,33:[1,52],34:[1,53],35:[1,54],36:[1,56],41:[1,28],43:[1,27],44:26},{5:[2,19],14:[2,19],15:[2,19],16:[2,19],19:[2,19],20:[2,19],22:[2,19],23:[2,19],25:[2,19]},{5:[2,22],14:[2,22],15:[2,22],16:[2,22],19:[2,22],20:[2,22],22:[2,22],23:[2,22],25:[2,22]},{18:[2,32],24:[2,32],33:[2,32],34:[2,32],35:[2,32],36:[2,32],37:[2,32],41:[2,32],43:[2,32]},{18:[2,34],24:[2,34],37:[2,34],41:[2,34]}],
-  defaultActions: {3:[2,2],16:[2,1],57:[2,45],68:[2,43]},
+  table: [{3:1,4:2,5:[1,3],8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[3]},{5:[1,16],8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],22:[1,13],23:[1,14],25:[1,15]},{1:[2,2]},{5:[2,9],14:[2,9],15:[2,9],16:[2,9],19:[2,9],20:[2,9],22:[2,9],23:[2,9],25:[2,9]},{4:20,6:18,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{4:20,6:22,7:19,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,8],22:[1,13],23:[1,14],25:[1,15]},{5:[2,13],14:[2,13],15:[2,13],16:[2,13],19:[2,13],20:[2,13],22:[2,13],23:[2,13],25:[2,13]},{5:[2,14],14:[2,14],15:[2,14],16:[2,14],19:[2,14],20:[2,14],22:[2,14],23:[2,14],25:[2,14]},{5:[2,15],14:[2,15],15:[2,15],16:[2,15],19:[2,15],20:[2,15],22:[2,15],23:[2,15],25:[2,15]},{5:[2,16],14:[2,16],15:[2,16],16:[2,16],19:[2,16],20:[2,16],22:[2,16],23:[2,16],25:[2,16]},{17:23,21:24,30:25,40:[1,28],42:[1,27],43:26},{17:29,21:24,30:25,40:[1,28],42:[1,27],43:26},{17:30,21:24,30:25,40:[1,28],42:[1,27],43:26},{17:31,21:24,30:25,40:[1,28],42:[1,27],43:26},{21:33,26:32,32:[1,34],33:[1,35],40:[1,28],43:26},{1:[2,1]},{5:[2,10],14:[2,10],15:[2,10],16:[2,10],19:[2,10],20:[2,10],22:[2,10],23:[2,10],25:[2,10]},{10:36,20:[1,37]},{4:38,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,7],22:[1,13],23:[1,14],25:[1,15]},{7:39,8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,21],20:[2,6],22:[1,13],23:[1,14],25:[1,15]},{17:23,18:[1,40],21:24,30:25,40:[1,28],42:[1,27],43:26},{10:41,20:[1,37]},{18:[1,42]},{18:[2,43],24:[2,43],28:43,32:[2,43],33:[2,43],34:[2,43],35:[2,43],36:[2,43],40:[2,43],42:[2,43]},{18:[2,25],24:[2,25],36:[2,25]},{18:[2,38],24:[2,38],32:[2,38],33:[2,38],34:[2,38],35:[2,38],36:[2,38],40:[2,38],42:[2,38],44:[1,44]},{21:45,40:[1,28],43:26},{18:[2,40],24:[2,40],32:[2,40],33:[2,40],34:[2,40],35:[2,40],36:[2,40],40:[2,40],42:[2,40],44:[2,40]},{18:[1,46]},{18:[1,47]},{24:[1,48]},{18:[2,41],21:50,27:49,40:[1,28],43:26},{18:[2,34],40:[2,34]},{18:[2,35],40:[2,35]},{18:[2,36],40:[2,36]},{5:[2,11],14:[2,11],15:[2,11],16:[2,11],19:[2,11],20:[2,11],22:[2,11],23:[2,11],25:[2,11]},{21:51,40:[1,28],43:26},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,3],22:[1,13],23:[1,14],25:[1,15]},{4:52,8:4,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,5],22:[1,13],23:[1,14],25:[1,15]},{14:[2,23],15:[2,23],16:[2,23],19:[2,23],20:[2,23],22:[2,23],23:[2,23],25:[2,23]},{5:[2,12],14:[2,12],15:[2,12],16:[2,12],19:[2,12],20:[2,12],22:[2,12],23:[2,12],25:[2,12]},{14:[2,18],15:[2,18],16:[2,18],19:[2,18],20:[2,18],22:[2,18],23:[2,18],25:[2,18]},{18:[2,45],21:56,24:[2,45],29:53,30:60,31:54,32:[1,57],33:[1,58],34:[1,59],35:[1,61],36:[2,45],37:55,38:62,39:63,40:[1,64],42:[1,27],43:26},{40:[1,65]},{18:[2,37],24:[2,37],32:[2,37],33:[2,37],34:[2,37],35:[2,37],36:[2,37],40:[2,37],42:[2,37]},{14:[2,17],15:[2,17],16:[2,17],19:[2,17],20:[2,17],22:[2,17],23:[2,17],25:[2,17]},{5:[2,20],14:[2,20],15:[2,20],16:[2,20],19:[2,20],20:[2,20],22:[2,20],23:[2,20],25:[2,20]},{5:[2,21],14:[2,21],15:[2,21],16:[2,21],19:[2,21],20:[2,21],22:[2,21],23:[2,21],25:[2,21]},{18:[1,66]},{18:[2,42]},{18:[1,67]},{8:17,9:5,11:6,12:7,13:8,14:[1,9],15:[1,10],16:[1,12],19:[1,11],20:[2,4],22:[1,13],23:[1,14],25:[1,15]},{18:[2,24],24:[2,24],36:[2,24]},{18:[2,44],24:[2,44],32:[2,44],33:[2,44],34:[2,44],35:[2,44],36:[2,44],40:[2,44],42:[2,44]},{18:[2,46],24:[2,46],36:[2,46]},{18:[2,26],24:[2,26],32:[2,26],33:[2,26],34:[2,26],35:[2,26],36:[2,26],40:[2,26],42:[2,26]},{18:[2,27],24:[2,27],32:[2,27],33:[2,27],34:[2,27],35:[2,27],36:[2,27],40:[2,27],42:[2,27]},{18:[2,28],24:[2,28],32:[2,28],33:[2,28],34:[2,28],35:[2,28],36:[2,28],40:[2,28],42:[2,28]},{18:[2,29],24:[2,29],32:[2,29],33:[2,29],34:[2,29],35:[2,29],36:[2,29],40:[2,29],42:[2,29]},{18:[2,30],24:[2,30],32:[2,30],33:[2,30],34:[2,30],35:[2,30],36:[2,30],40:[2,30],42:[2,30]},{17:68,21:24,30:25,40:[1,28],42:[1,27],43:26},{18:[2,32],24:[2,32],36:[2,32],39:69,40:[1,70]},{18:[2,47],24:[2,47],36:[2,47],40:[2,47]},{18:[2,40],24:[2,40],32:[2,40],33:[2,40],34:[2,40],35:[2,40],36:[2,40],40:[2,40],41:[1,71],42:[2,40],44:[2,40]},{18:[2,39],24:[2,39],32:[2,39],33:[2,39],34:[2,39],35:[2,39],36:[2,39],40:[2,39],42:[2,39],44:[2,39]},{5:[2,22],14:[2,22],15:[2,22],16:[2,22],19:[2,22],20:[2,22],22:[2,22],23:[2,22],25:[2,22]},{5:[2,19],14:[2,19],15:[2,19],16:[2,19],19:[2,19],20:[2,19],22:[2,19],23:[2,19],25:[2,19]},{36:[1,72]},{18:[2,48],24:[2,48],36:[2,48],40:[2,48]},{41:[1,71]},{21:56,30:60,31:73,32:[1,57],33:[1,58],34:[1,59],35:[1,61],40:[1,28],42:[1,27],43:26},{18:[2,31],24:[2,31],32:[2,31],33:[2,31],34:[2,31],35:[2,31],36:[2,31],40:[2,31],42:[2,31]},{18:[2,33],24:[2,33],36:[2,33],40:[2,33]}],
+  defaultActions: {3:[2,2],16:[2,1],50:[2,42]},
   parseError: function parseError(str, hash) {
       throw new Error(str);
   },
@@ -1245,20 +1173,20 @@ var __module9__ = (function() {
                                        this.begin("mu");
                                      }
                                      if(yy_.yytext) return 14;
-                                   
+
   break;
   case 1:return 14;
   break;
   case 2:
                                      this.popState();
                                      return 14;
-                                   
+
   break;
   case 3:strip(0,4); this.popState(); return 15;
   break;
-  case 4:return 36;
+  case 4:return 35;
   break;
-  case 5:return 37;
+  case 5:return 36;
   break;
   case 6:return 25;
   break;
@@ -1280,13 +1208,13 @@ var __module9__ = (function() {
   break;
   case 15:return 22;
   break;
-  case 16:return 42;
+  case 16:return 41;
   break;
-  case 17:return 41;
+  case 17:return 40;
   break;
-  case 18:return 41;
+  case 18:return 40;
   break;
-  case 19:return 45;
+  case 19:return 44;
   break;
   case 20:// ignore whitespace
   break;
@@ -1294,21 +1222,21 @@ var __module9__ = (function() {
   break;
   case 22:this.popState(); return 18;
   break;
-  case 23:yy_.yytext = strip(1,2).replace(/\\"/g,'"'); return 33;
+  case 23:yy_.yytext = strip(1,2).replace(/\\"/g,'"'); return 32;
   break;
-  case 24:yy_.yytext = strip(1,2).replace(/\\'/g,"'"); return 33;
+  case 24:yy_.yytext = strip(1,2).replace(/\\'/g,"'"); return 32;
   break;
-  case 25:return 43;
+  case 25:return 42;
   break;
-  case 26:return 35;
+  case 26:return 34;
   break;
-  case 27:return 35;
+  case 27:return 34;
   break;
-  case 28:return 34;
+  case 28:return 33;
   break;
-  case 29:return 41;
+  case 29:return 40;
   break;
-  case 30:yy_.yytext = strip(1,2); return 41;
+  case 30:yy_.yytext = strip(1,2); return 40;
   break;
   case 31:return 'INVALID';
   break;
@@ -1316,7 +1244,7 @@ var __module9__ = (function() {
   break;
   }
   };
-  lexer.rules = [/^(?:[^\x00]*?(?=(\{\{)))/,/^(?:[^\x00]+)/,/^(?:[^\x00]{2,}?(?=(\{\{|\\\{\{|\\\\\{\{|$)))/,/^(?:[\s\S]*?--\}\})/,/^(?:\()/,/^(?:\))/,/^(?:\{\{(~)?>)/,/^(?:\{\{(~)?#)/,/^(?:\{\{(~)?\/)/,/^(?:\{\{(~)?\^)/,/^(?:\{\{(~)?\s*else\b)/,/^(?:\{\{(~)?\{)/,/^(?:\{\{(~)?&)/,/^(?:\{\{!--)/,/^(?:\{\{![\s\S]*?\}\})/,/^(?:\{\{(~)?)/,/^(?:=)/,/^(?:\.\.)/,/^(?:\.(?=([=~}\s\/.)])))/,/^(?:[\/.])/,/^(?:\s+)/,/^(?:\}(~)?\}\})/,/^(?:(~)?\}\})/,/^(?:"(\\["]|[^"])*")/,/^(?:'(\\[']|[^'])*')/,/^(?:@)/,/^(?:true(?=([~}\s)])))/,/^(?:false(?=([~}\s)])))/,/^(?:-?[0-9]+(?:\.[0-9]+)?(?=([~}\s)])))/,/^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.)]))))/,/^(?:\[[^\]]*\])/,/^(?:.)/,/^(?:$)/];
+  lexer.rules = [/^(?:[^\x00]*?(?=(\{\{)))/,/^(?:[^\x00]+)/,/^(?:[^\x00]{2,}?(?=(\{\{|\\\{\{|\\\\\{\{|$)))/,/^(?:[\s\S]*?--\}\})/,/^(?:\()/,/^(?:\))/,/^(?:\{\{(~)?>)/,/^(?:\{\{(~)?#)/,/^(?:\{\{(~)?\/)/,/^(?:\{\{(~)?\^)/,/^(?:\{\{(~)?\s*else\b)/,/^(?:\{\{(~)?\{)/,/^(?:\{\{(~)?&)/,/^(?:\{\{!--)/,/^(?:\{\{![\s\S]*?\}\})/,/^(?:\{\{(~)?)/,/^(?:=)/,/^(?:\.\.)/,/^(?:\.(?=([=~}\s\/.)])))/,/^(?:[\/.])/,/^(?:\s+)/,/^(?:\}(~)?\}\})/,/^(?:(~)?\}\})/,/^(?:"(\\["]|[^"])*")/,/^(?:'(\\[']|[^'])*')/,/^(?:@)/,/^(?:true(?=([~}\s)])))/,/^(?:false(?=([~}\s)])))/,/^(?:-?[0-9]+(?=([~}\s)])))/,/^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.)]))))/,/^(?:\[[^\]]*\])/,/^(?:.)/,/^(?:$)/];
   lexer.conditions = {"mu":{"rules":[4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32],"inclusive":false},"emu":{"rules":[2],"inclusive":false},"com":{"rules":[3],"inclusive":false},"INITIAL":{"rules":[0,1,32],"inclusive":true}};
   return lexer;})()
   parser.lexer = lexer;
@@ -1427,8 +1355,6 @@ var __module10__ = (function(__dependency1__) {
       this.children = [];
       this.depths = {list: []};
       this.options = options;
-      this.stringParams = options.stringParams;
-      this.trackIds = options.trackIds;
 
       // These changes will propagate to the other compiler components
       var knownHelpers = this.options.knownHelpers;
@@ -1525,7 +1451,7 @@ var __module10__ = (function(__dependency1__) {
         this.opcode('pushProgram', program);
         this.opcode('pushProgram', inverse);
         this.opcode('emptyHash');
-        this.opcode('blockValue', sexpr.id.original);
+        this.opcode('blockValue');
       } else {
         this.ambiguousSexpr(sexpr, program, inverse);
 
@@ -1541,14 +1467,30 @@ var __module10__ = (function(__dependency1__) {
     },
 
     hash: function(hash) {
-      var pairs = hash.pairs, pair;
+      var pairs = hash.pairs, pair, val;
 
       this.opcode('pushHash');
 
       for(var i=0, l=pairs.length; i<l; i++) {
         pair = pairs[i];
+        val  = pair[1];
 
-        this.pushParam(pair[1]);
+        if (this.options.stringParams) {
+          if(val.depth) {
+            this.addDepth(val.depth);
+          }
+          this.opcode('getContext', val.depth || 0);
+          this.opcode('pushStringParam', val.stringModeValue, val.type);
+
+          if (val.type === 'sexpr') {
+            // Subexpressions get evaluated and passed in
+            // in string params mode.
+            this.sexpr(val);
+          }
+        } else {
+          this.accept(val);
+        }
+
         this.opcode('assignToHash', pair[0]);
       }
       this.opcode('popHash');
@@ -1558,14 +1500,8 @@ var __module10__ = (function(__dependency1__) {
       var partialName = partial.partialName;
       this.usePartial = true;
 
-      if (partial.hash) {
-        this.accept(partial.hash);
-      } else {
-        this.opcode('push', 'undefined');
-      }
-
-      if (partial.context) {
-        this.accept(partial.context);
+      if(partial.context) {
+        this.ID(partial.context);
       } else {
         this.opcode('push', 'depth0');
       }
@@ -1620,15 +1556,13 @@ var __module10__ = (function(__dependency1__) {
 
     helperSexpr: function(sexpr, program, inverse) {
       var params = this.setupFullMustacheParams(sexpr, program, inverse),
-          id = sexpr.id,
-          name = id.parts[0];
+          name = sexpr.id.parts[0];
 
       if (this.options.knownHelpers[name]) {
         this.opcode('invokeKnownHelper', params.length, name);
       } else if (this.options.knownHelpersOnly) {
         throw new Exception("You specified knownHelpersOnly, but used the unknown helper " + name, sexpr);
       } else {
-        this.ID(id);
         this.opcode('invokeHelper', params.length, name, sexpr.isRoot);
       }
     },
@@ -1678,8 +1612,8 @@ var __module10__ = (function(__dependency1__) {
       this.opcode('pushString', string.string);
     },
 
-    NUMBER: function(number) {
-      this.opcode('pushLiteral', number.number);
+    INTEGER: function(integer) {
+      this.opcode('pushLiteral', integer.integer);
     },
 
     BOOLEAN: function(bool) {
@@ -1712,7 +1646,6 @@ var __module10__ = (function(__dependency1__) {
       var options    = this.options;
 
       // if ambiguous, we can possibly resolve the ambiguity now
-      // An eligible helper is one that does not have a complex path, i.e. `this.foo`, `../foo` etc.
       if (isEligible && !isHelper) {
         var name = sexpr.id.parts[0];
 
@@ -1729,31 +1662,27 @@ var __module10__ = (function(__dependency1__) {
     },
 
     pushParams: function(params) {
-      var i = params.length;
+      var i = params.length, param;
 
       while(i--) {
-        this.pushParam(params[i]);
-      }
-    },
+        param = params[i];
 
-    pushParam: function(val) {
-      if (this.stringParams) {
-        if(val.depth) {
-          this.addDepth(val.depth);
-        }
-        this.opcode('getContext', val.depth || 0);
-        this.opcode('pushStringParam', val.stringModeValue, val.type);
+        if(this.options.stringParams) {
+          if(param.depth) {
+            this.addDepth(param.depth);
+          }
 
-        if (val.type === 'sexpr') {
-          // Subexpressions get evaluated and passed in
-          // in string params mode.
-          this.sexpr(val);
+          this.opcode('getContext', param.depth || 0);
+          this.opcode('pushStringParam', param.stringModeValue, param.type);
+
+          if (param.type === 'sexpr') {
+            // Subexpressions get evaluated and passed in
+            // in string params mode.
+            this.sexpr(param);
+          }
+        } else {
+          this[param.type](param);
         }
-      } else {
-        if (this.trackIds) {
-          this.opcode('pushId', val.type, val.idName || val.stringModeValue);
-        }
-        this.accept(val);
       }
     },
 
@@ -1851,7 +1780,8 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
         ret = parent + "[" + name + "]";
       } else if (JavaScriptCompiler.isValidJavaScriptVariableName(name)) {
         ret = parent + "." + name;
-      } else {
+      }
+      else {
         ret = parent + "['" + name + "']";
       }
 
@@ -1890,8 +1820,6 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     compile: function(environment, options, context, asObject) {
       this.environment = environment;
       this.options = options || {};
-      this.stringParams = this.options.stringParams;
-      this.trackIds = this.options.trackIds;
 
       log('debug', this.environment.disassemble() + "\n\n");
 
@@ -1951,7 +1879,7 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
 
         var copies = "helpers = this.merge(helpers, " + namespace + ".helpers);";
         if (this.environment.usePartial) { copies = copies + " partials = this.merge(partials, " + namespace + ".partials);"; }
-        if (this.options.data) { copies = copies + " data = this.initData(depth0, data);"; }
+        if (this.options.data) { copies = copies + " data = data || {};"; }
         out.push(copies);
       } else {
         out.push('');
@@ -1998,7 +1926,7 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
         this.pushSource("return buffer;");
       }
 
-      var params = this.isChild ? ["depth0", "data"] : [this.namespace, "depth0", "helpers", "partials", "data"];
+      var params = this.isChild ? ["depth0", "data"] : ["Handlebars", "depth0", "helpers", "partials", "data"];
 
       for(var i=0, l=this.environment.depths.list.length; i<l; i++) {
         params.push("depth" + this.environment.depths.list[i]);
@@ -2051,14 +1979,14 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     // On stack, after: return value of blockHelperMissing
     //
     // The purpose of this opcode is to take a block of the form
-    // `{{#this.foo}}...{{/this.foo}}`, resolve the value of `foo`, and
+    // `{{#foo}}...{{/foo}}`, resolve the value of `foo`, and
     // replace it on the stack with the result of properly
     // invoking blockHelperMissing.
-    blockValue: function(name) {
+    blockValue: function() {
       this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
 
       var params = ["depth0"];
-      this.setupParams(name, 0, params);
+      this.setupParams(0, params);
 
       this.replaceStack(function(current) {
         params.splice(1, 0, current);
@@ -2075,11 +2003,8 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     ambiguousBlockValue: function() {
       this.context.aliases.blockHelperMissing = 'helpers.blockHelperMissing';
 
-      // We're being a bit cheeky and reusing the options value from the prior exec
       var params = ["depth0"];
-      this.setupParams('', 0, params, true);
-
-      this.flushInline();
+      this.setupParams(0, params);
 
       var current = this.topStack();
       params.splice(1, 0, current);
@@ -2249,10 +2174,7 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     emptyHash: function() {
       this.pushStackLiteral('{}');
 
-      if (this.trackIds) {
-        this.push('{}'); // hashIds
-      }
-      if (this.stringParams) {
+      if (this.options.stringParams) {
         this.push('{}'); // hashContexts
         this.push('{}'); // hashTypes
       }
@@ -2261,16 +2183,13 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
       if (this.hash) {
         this.hashes.push(this.hash);
       }
-      this.hash = {values: [], types: [], contexts: [], ids: []};
+      this.hash = {values: [], types: [], contexts: []};
     },
     popHash: function() {
       var hash = this.hash;
       this.hash = this.hashes.pop();
 
-      if (this.trackIds) {
-        this.push('{' + hash.ids.join(',') + '}');
-      }
-      if (this.stringParams) {
+      if (this.options.stringParams) {
         this.push('{' + hash.contexts.join(',') + '}');
         this.push('{' + hash.types.join(',') + '}');
       }
@@ -2340,15 +2259,20 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
       this.context.aliases.helperMissing = 'helpers.helperMissing';
       this.useRegister('helper');
 
-      var nonHelper = this.popStack();
-      var helper = this.setupHelper(paramSize, name);
+      var helper = this.lastHelper = this.setupHelper(paramSize, name, true);
+      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
 
-      var lookup = 'helper = ' + helper.name + ' || ' + nonHelper + ' || helperMissing';
+      var lookup = 'helper = ' + helper.name + ' || ' + nonHelper;
       if (helper.paramsInit) {
         lookup += ',' + helper.paramsInit;
       }
 
-      this.push('(' + lookup + ',helper.call(' + helper.callParams + '))');
+      this.push(
+        '('
+          + lookup
+          + ',helper '
+            + '? helper.call(' + helper.callParams + ') '
+            + ': helperMissing.call(' + helper.helperMissingParams + '))');
 
       // Always flush subexpressions. This is both to prevent the compounding size issue that
       // occurs when the code has to be duplicated for inlining and also to prevent errors
@@ -2390,12 +2314,15 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
       var helper = this.setupHelper(0, name, helperCall);
 
       var helperName = this.lastHelper = this.nameLookup('helpers', name, 'helper');
-      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
 
-      this.push(
-        '((helper = ' + helperName + ' || ' + nonHelper
-          + (helper.paramsInit ? '),(' + helper.paramsInit : '') + '),'
-        + '(typeof helper === functionType ? helper.call(' + helper.callParams + ') : helper))');
+      var nonHelper = this.nameLookup('depth' + this.lastContext, name, 'context');
+      var nextStack = this.nextStack();
+
+      if (helper.paramsInit) {
+        this.pushSource(helper.paramsInit);
+      }
+      this.pushSource('if (helper = ' + helperName + ') { ' + nextStack + ' = helper.call(' + helper.callParams + '); }');
+      this.pushSource('else { helper = ' + nonHelper + '; ' + nextStack + ' = typeof helper === functionType ? helper.call(' + helper.callParams + ') : helper; }');
     },
 
     // [invokePartial]
@@ -2406,7 +2333,7 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     // This operation pops off a context, invokes a partial with that context,
     // and pushes the result of the invocation back.
     invokePartial: function(name) {
-      var params = [this.nameLookup('partials', name, 'partial'), "'" + name + "'", this.popStack(), this.popStack(), "helpers", "partials"];
+      var params = [this.nameLookup('partials', name, 'partial'), "'" + name + "'", this.popStack(), "helpers", "partials"];
 
       if (this.options.data) {
         params.push("data");
@@ -2426,13 +2353,9 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
     assignToHash: function(key) {
       var value = this.popStack(),
           context,
-          type,
-          id;
+          type;
 
-      if (this.trackIds) {
-        id = this.popStack();
-      }
-      if (this.stringParams) {
+      if (this.options.stringParams) {
         type = this.popStack();
         context = this.popStack();
       }
@@ -2444,20 +2367,7 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
       if (type) {
         hash.types.push("'" + key + "': " + type);
       }
-      if (id) {
-        hash.ids.push("'" + key + "': " + id);
-      }
       hash.values.push("'" + key + "': (" + value + ")");
-    },
-
-    pushId: function(type, name) {
-      if (type === 'ID' || type === 'DATA') {
-        this.pushString(name);
-      } else if (type === 'sexpr') {
-        this.pushStackLiteral('true');
-      } else {
-        this.pushStackLiteral('null');
-      }
     },
 
     // HELPERS
@@ -2672,43 +2582,28 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
         .replace(/\u2029/g, '\\u2029') + '"';
     },
 
-    setupHash: function(obj) {
-      var pairs = [];
-
-      for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          pairs.push(this.quotedString(key) + ':' + obj[key]);
-        }
-      }
-
-      return '{' + pairs.join(',') + '}';
-    },
-
-    setupHelper: function(paramSize, name, blockHelper) {
+    setupHelper: function(paramSize, name, missingParams) {
       var params = [],
-          paramsInit = this.setupParams(name, paramSize, params, blockHelper);
+          paramsInit = this.setupParams(paramSize, params, missingParams);
       var foundHelper = this.nameLookup('helpers', name, 'helper');
 
       return {
         params: params,
         paramsInit: paramsInit,
         name: foundHelper,
-        callParams: ["depth0"].concat(params).join(", ")
+        callParams: ["depth0"].concat(params).join(", "),
+        helperMissingParams: missingParams && ["depth0", this.quotedString(name)].concat(params).join(", ")
       };
     },
 
-    setupOptions: function(helper, paramSize, params) {
-      var options = {}, contexts = [], types = [], ids = [], param, inverse, program;
+    setupOptions: function(paramSize, params) {
+      var options = [], contexts = [], types = [], param, inverse, program;
 
-      options.name = this.quotedString(helper);
-      options.hash = this.popStack();
+      options.push("hash:" + this.popStack());
 
-      if (this.trackIds) {
-        options.hashIds = this.popStack();
-      }
-      if (this.stringParams) {
-        options.hashTypes = this.popStack();
-        options.hashContexts = this.popStack();
+      if (this.options.stringParams) {
+        options.push("hashTypes:" + this.popStack());
+        options.push("hashContexts:" + this.popStack());
       }
 
       inverse = this.popStack();
@@ -2727,33 +2622,27 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
           inverse = "self.noop";
         }
 
-        options.fn = program;
-        options.inverse = inverse;
+        options.push("inverse:" + inverse);
+        options.push("fn:" + program);
       }
 
-      for (var i = 0; i < paramSize; i++) {
+      for(var i=0; i<paramSize; i++) {
         param = this.popStack();
         params.push(param);
 
-        if (this.trackIds) {
-          ids.push(this.popStack());
-        }
-        if (this.stringParams) {
+        if(this.options.stringParams) {
           types.push(this.popStack());
           contexts.push(this.popStack());
         }
       }
 
-      if (this.trackIds) {
-        options.ids = "[" + ids.join(",") + "]";
-      }
-      if (this.stringParams) {
-        options.types = "[" + types.join(",") + "]";
-        options.contexts = "[" + contexts.join(",") + "]";
+      if (this.options.stringParams) {
+        options.push("contexts:[" + contexts.join(",") + "]");
+        options.push("types:[" + types.join(",") + "]");
       }
 
-      if (this.options.data) {
-        options.data = "data";
+      if(this.options.data) {
+        options.push("data:data");
       }
 
       return options;
@@ -2761,8 +2650,8 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
 
     // the params and contexts arguments are passed in arrays
     // to fill in
-    setupParams: function(helperName, paramSize, params, useRegister) {
-      var options = this.setupHash(this.setupOptions(helperName, paramSize, params));
+    setupParams: function(paramSize, params, useRegister) {
+      var options = '{' + this.setupOptions(paramSize, params).join(',') + '}';
 
       if (useRegister) {
         this.useRegister('options');
@@ -2800,7 +2689,10 @@ var __module11__ = (function(__dependency1__, __dependency2__) {
   }
 
   JavaScriptCompiler.isValidJavaScriptVariableName = function(name) {
-    return !JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(name);
+    if(!JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(name)) {
+      return true;
+    }
+    return false;
   };
 
   __exports__ = JavaScriptCompiler;

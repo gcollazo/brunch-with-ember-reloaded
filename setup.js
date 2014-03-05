@@ -7,7 +7,7 @@ var exec = require('child_process').exec,
     fsExistsSync = fs.existsSync || sysPath.existsSync,
     emberUrls = {
       common: [
-        'http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-latest.js'
+        'http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-v1.3.0.js'
       ],
       development: [
         'http://builds.emberjs.com/release/ember.js',
