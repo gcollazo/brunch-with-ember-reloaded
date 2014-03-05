@@ -1,6 +1,6 @@
 # Brunch with Ember Reloaded
 
-![build status]()
+![build status](https://travis-ci.org/gcollazo/brunch-with-ember-reloaded.png)
 
 A [Brunch](http://brunch.io) skeleton for creating ambitious web applications using [Ember.js](http://emberjs.com). Based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
 
