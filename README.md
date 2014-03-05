@@ -1,5 +1,7 @@
 # Brunch with Ember Reloaded
 
+![build status]()
+
 A [Brunch](http://brunch.io) skeleton for creating ambitious web applications using [Ember.js](http://emberjs.com). Based on the official Ember [Starter Kit](https://github.com/emberjs/starter-kit/archive/master.zip).
 
 ## Demo
