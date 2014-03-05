@@ -14,6 +14,7 @@
   "scripts": {
     "test": "karma start",
     "start": "brunch watch --server",
+    "build": "brunch build",
     "update:ember": "node setup.js update:ember",
     "update:skeleton": "node setup.js update:skeleton"
   },
