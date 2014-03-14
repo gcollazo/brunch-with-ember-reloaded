@@ -4,4 +4,5 @@ node_js:
     - "0.10"
 before_script:
     - "npm install -g brunch"
+    - "npm install -g karma"
     - "npm run build"
