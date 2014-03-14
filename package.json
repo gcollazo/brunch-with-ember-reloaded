@@ -12,7 +12,7 @@
     "node": "~0.6.10 || 0.8 || 0.9"
   },
   "scripts": {
-    "test": "karma start --single-run --browsers PhantomJS",
+    "test": "./node_modules/karma/bin/karma start --single-run --browsers PhantomJS",
     "start": "brunch watch --server",
     "build": "brunch build",
     "update:ember": "node setup.js update:ember",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "karma": "*",
-    "karma-qunit": "*"
+    "karma-qunit": "*",
+    "karma-phantomjs-launcher": "~0.1.2"
   }
 }
