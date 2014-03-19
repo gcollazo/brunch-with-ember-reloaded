@@ -14,7 +14,8 @@
   "scripts": {
     "test": "./node_modules/karma/bin/karma start --single-run --browsers PhantomJS",
     "start": "brunch watch --server",
-    "build": "brunch build --production",
+    "build": "brunch build",
+    "build:production": "brunch build --production",
     "update:ember": "node setup.js update:ember",
     "update:skeleton": "node setup.js update:skeleton"
   },
