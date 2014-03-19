@@ -1,74 +1,60 @@
 'use strict';
 
-var exec = require('child_process').exec,
-    sysPath = require('path'),
-    fs = require('fs'),
-    mode = process.argv[2],
-    fsExistsSync = fs.existsSync || sysPath.existsSync,
-    emberUrls = {
-      common: [
-        'http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-v1.3.0.js'
-      ],
-      development: [
-        'http://builds.emberjs.com/release/ember.js',
-        'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.js'
-      ],
-      production: [
-        'http://builds.emberjs.com/release/ember.prod.js',
-        'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js'
-      ]
-    };
+var command = process.argv[2],
+    exec = require('child_process').exec;
 
-var getBinaryPath = function(binary) {
-  var path;
-  if (fsExistsSync(
-      path = sysPath.join('node_modules', '.bin', binary))) return path;
-  if (fsExistsSync(path = sysPath.join('..', '.bin', binary))) return path;
-  return binary;
-};
 
-var execute = function(path, params, callback) {
-  if (callback == null) callback = function() {};
-  var command = path + ' ' + params;
-  console.log('Executing', command);
-  exec(command, function(error, stdout, stderr) {
-    if (error != null) return process.stderr.write(stderr.toString());
-    console.log(stdout.toString());
-    callback();
-  });
-};
+var skeletonURL = 'https://codeload.github.com/gcollazo/brunch-with-ember-reloaded/zip/master';
+var fileSources = [
+  {
+    src: 'http://builds.emberjs.com/release/ember.js',
+    dest: 'vendor/scripts/development/ember.js'
+  },
+  {
+    src: 'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.js',
+    dest: 'vendor/scripts/development/ember-data.js'
+  },
+  {
+    src: 'http://builds.emberjs.com/release/ember.prod.js',
+    dest: 'vendor/scripts/production/ember.js'
+  },
+  {
+    src: 'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js',
+    dest: 'vendor/scripts/production/ember-data.js'
+  }
+];
 
-switch (mode) {
+
+switch (command) {
   case 'update:ember':
-    for (var env in emberUrls) {
-      for (var file in emberUrls[env]) {
-        var download = emberUrls[env][file],
-            filename = download.split('/').reverse()[0]
-                       .replace('.prod', '').replace('-latest', '');
-
-        execute('curl ' + emberUrls[env][file],
-                ' > vendor/scripts/' + env + '/' + filename);
-      }
-    }
+    console.log('-> Downloading files...');
+    fileSources.forEach(function(file) {
+      exec('curl ' + file.src + ' > ' + file.dest);
+    });
     break;
 
   case 'update:skeleton':
-    var downloadUrl = 'https://codeload.github.com/gcollazo/brunch-with-ember-reloaded/zip/master';
-
-    execute('curl ' + downloadUrl, '> master.zip', function() {
-      execute('unzip', 'master.zip', function() {
-        execute('cat brunch-with-ember-reloaded-master/config.js', '> config.js');
-        execute('cat brunch-with-ember-reloaded-master/karma.conf.js', '> karma.conf.js');
-        execute('cat brunch-with-ember-reloaded-master/package.json', '> package.json');
-        execute('cat brunch-with-ember-reloaded-master/README.md', '> README.md');
-        execute('cat brunch-with-ember-reloaded-master/setup.js', '> setup.js');
-        execute('rm', '-rf generators', function() {
-          execute('mv brunch-with-ember-reloaded-master/generators/', 'generators/', function() {
-            execute('rm', '-rf brunch-with-ember-reloaded-master');
-            execute('rm', '-r master.zip');
+    exec('curl ' + skeletonURL + '> master.zip', function() {
+      exec('unzip master.zip', function() {
+        exec('cat brunch-with-ember-reloaded-master/config.js > config.js');
+        exec('cat brunch-with-ember-reloaded-master/karma.conf.js > karma.conf.js');
+        exec('cat brunch-with-ember-reloaded-master/package.json > package.json');
+        exec('cat brunch-with-ember-reloaded-master/README.md > README.md');
+        exec('cat brunch-with-ember-reloaded-master/setup.js > setup.js');
+        exec('rm -rf generators', function() {
+          exec('mv brunch-with-ember-reloaded-master/generators/ generators/', function() {
+            exec('rm -rf brunch-with-ember-reloaded-master');
+            exec('rm -r master.zip');
           });
         });
       });
     });
     break;
+
+  default:
+    console.log();
+    console.log('Usage:');
+    console.log('\tnpm run update:ember     Updates ember.js an ember-data.js');
+    console.log('\tnpm run update:skeleton  Updates all skeleton files');
+    console.log();
 }
