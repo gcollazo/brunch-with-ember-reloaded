@@ -42,7 +42,7 @@ exports.config = {
         javascripts: {
           joinTo: {
             'javascripts/app.js': /^(app|envs\/production)/,
-            'javascripts/vendor.js': /^(vendor\/scripts\/(common|development)|vendor\\scripts\\(common|development))/
+            'javascripts/vendor.js': /^(vendor\/scripts\/(common|production)|vendor\\scripts\\(common|production))/
           },
           order: {
             before: [
