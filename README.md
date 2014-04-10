@@ -13,7 +13,7 @@ I built a demo app using this skeleton, based on the [Building an App with Ember
 **Source**: [https://github.com/gcollazo/ember-bloggr](https://github.com/gcollazo/ember-bloggr)
 
 ## Versions
-- [Ember 1.4.1+pre.af87bd20](http://emberjs.com)
+- [Ember 1.5.1+pre.ff8c6bbb](http://emberjs.com)
 - [Ember Data 1.0.0-beta.7+canary.238bb5ce](https://github.com/emberjs/data)
 - [Handlebars 1.3.0](http://handlebarsjs.com)
 - [jQuery v2.0.3](http://jquery.com)
