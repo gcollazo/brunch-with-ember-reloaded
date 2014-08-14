@@ -11,7 +11,7 @@ var fileSources = [
     dest: 'vendor/scripts/development/ember.js'
   },
   {
-    src: 'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.js',
+    src: 'http://builds.emberjs.com/canary/ember-data.js',
     dest: 'vendor/scripts/development/ember-data.js'
   },
   {
@@ -19,7 +19,7 @@ var fileSources = [
     dest: 'vendor/scripts/production/ember.js'
   },
   {
-    src: 'http://builds.emberjs.com.s3.amazonaws.com/ember-data-latest.prod.js',
+    src: 'http://builds.emberjs.com/canary/ember-data.prod.js',
     dest: 'vendor/scripts/production/ember-data.js'
   }
 ];
