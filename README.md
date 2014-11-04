@@ -1,6 +1,8 @@
 # Warning
 I've stopped using this skeleton and am no longer maintaining this repository. You should try [ember-cli](https://github.com/stefanpenner/ember-cli).
 
+If you want to take over maintenance of this skeleton let me know [@gcollazo](http://twtitter.com/gcollazo)
+
 # Brunch with Ember Reloaded
 
 ![build status](https://travis-ci.org/gcollazo/brunch-with-ember-reloaded.png)
